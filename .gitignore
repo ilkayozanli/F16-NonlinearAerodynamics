@@ -1,0 +1,23 @@
+# --- MATLAB ---
+*.asv
+*.mex*
+*.slprj/
+*.log
+bin/
+work/
+slprj/
+*.mat
+
+# --- LaTeX (TeXstudio) ---
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.toc
+*.run.xml
+*.bcf
+*.synctex.gz
+*.pdf
+# Note: Keep the .pdf line if you want people to compile it themselves. 
+# Remove it if you want the final PDF to show up on GitHub.
