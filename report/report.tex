@@ -1,16 +1,117 @@
-\documentclass[12pt]{article}
-\usepackage[utf8]{inputenc}
-\usepackage{amsmath}
-\usepackage{graphicx}
+% ------------------------------------------------------------------
+% CHECKLIST: numeric claims cited from papers, to verify against
+% my own MATLAB plots (van Oort & Sonneveldt digitized tables)
+% once I get there. Update this list as I add more cited numbers.
+%
+%   - Wing stall onset:        alpha ~ 20 deg   (Nguyen 1979, Fig. 9)
+%   - Max CL (strake vortex):  alpha ~ 35 deg   (Nguyen 1979, Fig. 9)
+%   - Cm unstable crossing:    alpha ~ 48 deg   (Nguyen 1979, Fig. 10)
+%   - Deep-stall stable trim:  alpha ~ 58-60 deg (Nguyen 1979, Fig. 10)
+%   - Full nose-up trim pt:    alpha = 66 deg   (Nguyen 1979, text, Fig. 10)
+%   - Low-speed static margin: approx -4%        (Nguyen 1979, text)
+% ------------------------------------------------------------------
+\documentclass[
+bindingoffset=5mm,  % Binding offset
+footnoteindent=3mm, % Footnote indent
+hyphenation=true    % Hyphenation turn on/off
+]{src/wut-thesis}
 
-\title{F-16 Nonlinear Aerodynamics Project}
-\author{Ilkay Ozanli}
-\date{\today}
+\graphicspath{{tex/img/}}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amssymb, amsfonts} % For math equations
+\usepackage{csquotes, ellipsis}
+\usepackage[scaled=0.85]{beramono}
+\usepackage{xcolor}     % For code coloring
+\usepackage{subcaption}
+\usepackage[numbered,framed]{matlab-prettifier} 
+\usepackage{listings}   % For code snippets
+\lstset{
+	inputencoding=utf8,
+	extendedchars=true,
+	literate={θ}{{$\theta$}}1
+}
+\usepackage{dirtreex}   % For images
+\usepackage{graphicx}   % For figure placement
+\usepackage{float}      
+\usepackage{url}
+
+\usepackage{booktabs} % Required for TABLE
+\usepackage{siunitx}  % Required for TABLE
+\usepackage{multirow}
+
+\usepackage{pdflscape}
+\usepackage{hyperref}
+\usepackage[section]{placeins}
+
+\addbibresource{refs.bib}
+
+% Specify paper size
+\setcounter{tocdepth}{2}
+% Code Listing Style Definition
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+\lstdefinestyle{myMatlabStyle}{
+	backgroundcolor=\color{backcolour},   % Your light beige background
+	commentstyle=\color{codegreen},       % Your green comments
+	keywordstyle=\color{blue},            % Standard blue keywords
+	numberstyle=\tiny\color{codegray},    % Gray line numbers
+	stringstyle=\color{codepurple},       % Purple strings
+	basicstyle=\ttfamily\footnotesize,    % Monospace font
+	breaklines=true,                 
+	captionpos=b,                    
+	keepspaces=true,                 
+	numbers=left,                    
+	numbersep=5pt,                  
+	showspaces=false,                
+	showstringspaces=false,
+	showtabs=false,                  
+	tabsize=2,
+	language=Matlab                       % Enforce Matlab syntax highlighting
+}
+
+\facultymeil
+\EngineerThesis
+\langeng 
+
+\instytut{Aeronautics and Applied Mechanics}
+\kierunek{Intermediate Engineering Project}
+\specjalnosc{Intermediate Engineering Project}
+\title{
+	Nonlinear Aerodynamic Effects at High Angles of Attack: \\
+	Influence on Stability and Maneuverability of High-Performance Fighter Aircraft
+}
+
+
+\promotor{Krzysztof Sibilski}
+
+\author{İlkay Özanli 336225}
+\date{\the\year}
 
 \begin{document}
 	\maketitle
+	\newpage
+	\tableofcontents
+	\newpage
 	
 	\section{Introduction}
-	This project explores the F-16 flight dynamics beyond the linear regime...
 	
+	High-performance fighter aircraft are routinely required to operate at angles of attack far beyond the range where classical, linear aerodynamic theory remains valid. At low angles of attack, the relationship between angle of attack and the resulting aerodynamic forces and moments is smooth and nearly linear, allowing flight dynamics to be analyzed using standard small-perturbation, linear stability theory. However, modern fighters, particularly those designed for high-agility, post-stall maneuvering, deliberately operate in the high-angle-of-attack regime, where this linear assumption breaks down. Flow separation, vortex formation and breakdown, and asymmetric flow effects introduce strong nonlinearities into the aerodynamic forces and moments, which in turn produce nonlinear and sometimes counterintuitive stability and control characteristics.
+	
+	This project investigates how these nonlinear aerodynamic effects shape the stability and maneuverability of fighter aircraft, using the F-16 as a primary case study due to the extensive open-literature aerodynamic and flight dynamics data available for it. The core aerodynamic dataset originates from NASA Technical Paper 1538 \cite{nguyen1979}, which documents a wind-tunnel-based nonlinear aerodynamic model of the F-16 across an angle-of-attack range of $-20^{\circ}$ to $90^{\circ}$. For the numerical work in this project, this dataset is used in the digitized, simulation-ready form compiled by van Oort and Sonneveldt \cite{vanoort2006}, which reformats the original NASA tables for direct use in MATLAB/Simulink-based flight dynamics models.
+	
+	
+	\section{High Angle-of-Attack Flow Physics}
+	
+ At low angles of attack, the boundary layer remains attached to the wing's upper surface, and lift increases nearly linearly with angle of attack. As angle of attack increases beyond a critical value, the adverse pressure gradient over the aft portion of the wing becomes too severe for the boundary layer to overcome, and flow separation occurs, initiating near the trailing edge and progressively moving forward as angle of attack continues to increase. This separation reduces the effective lift-curve slope, causing the lift coefficient to grow more slowly, reach a maximum, and ultimately decline --- the classical stall phenomenon \cite{mason2006}.
+
+ Modern fighter configurations, including the F-16, delay and modify this behavior through the use of leading-edge extensions (strakes). Rather than simply generating lift through attached flow, the strake generates a strong, stable leading-edge vortex, which remains attached and continues to generate substantial additional lift well past the angle of attack at which the wing itself has stalled. Wind-tunnel flow-visualization tests on the F-16 configuration showed the outer wing panels stalling near $\alpha = 20^{\circ}$, while the wing-body strake continued producing lift up to a maximum $C_L$ near $\alpha = 35^{\circ}$ \cite[Sec.~``Longitudinal Characteristics,'' Fig.~9]{nguyen1979}.
+
+ At still higher angles of attack, this vortex itself becomes unstable. It undergoes vortex breakdown --- an abrupt disorganization of the previously coherent vortex structure --- beyond which it can no longer sustain the same lift contribution \cite{sedlacek2023}. Because this breakdown process is highly sensitive to small geometric and flow asymmetries, the left and right vortices frequently break down at different angles of attack or in different manners, even when the aircraft is flying with zero sideslip and is otherwise geometrically symmetric \cite{sedlacek2023}. This produces unintended, asymmetric side forces and yawing/rolling moments --- a genuinely nonlinear phenomenon with no counterpart at low angle of attack, and one of the principal drivers of departure and spin susceptibility at high angle of attack \cite{nguyen1979}.
+	
+ \printbibliography
+ 
 \end{document}
