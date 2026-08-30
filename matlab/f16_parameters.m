@@ -5,8 +5,8 @@ close all;
 L= 15.027 ; %[m]
 b = 9.449; % [m]
 h = 5.09; %[m]
-empty_weight = 9.207 ; %[kg]
-Max_Togw = 21.772 ; %[kg]
+empty_weight = 9207 ; %[kg]
+Max_Togw = 21772 ; %[kg]
 n = 9  ; %[g] design load factor
 Service_ceiling= 15000; %[m]
 
