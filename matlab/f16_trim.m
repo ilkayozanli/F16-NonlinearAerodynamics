@@ -12,7 +12,7 @@ function [thtl, dh, alpha, resid] = f16_trim(V, h, gamma_deg, xcg, guess)
 %   for throttle, stabilator and angle of attack, with sideslip and all
 %   body rates zero.  This is what "trim" means.  Solving only qdot = 0,
 %   which is the same as finding the zeros of Cm(alpha), gives points that
-%   satisfy moment balance but at which the aeroplane is not in equilibrium
+%   satisfy moment balance but at which the airplane is not in equilibrium
 %   at all: the reported alpha will generally not hold the aircraft up.
 %
 %   Inputs:  V         true airspeed                       [m/s]

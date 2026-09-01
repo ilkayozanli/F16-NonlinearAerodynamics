@@ -1,7 +1,7 @@
-function [CX,CY,CZ,Cl,Cm,Cn] = f16_aero(alpha,beta,dh,da,dr,dlef,p,q,r,V,xcg)
+function [CX,CY,CZ,Cl,Cm,Cn] = f16_aero(alpha,beta,dh,da,dr,dlef,p,q,r,V,xcg,smooth)
 %F16_AERO  Complete nonlinear aerodynamic coefficients of the NASA F-16 model.
 %
-%   [CX,CY,CZ,Cl,Cm,Cn] = F16_AERO(alpha,beta,dh,da,dr,dlef,p,q,r,V,xcg)
+%   [CX,CY,CZ,Cl,Cm,Cn] = F16_AERO(alpha,beta,dh,da,dr,dlef,p,q,r,V,xcg,smooth)
 %
 %   Inputs
 %     alpha, beta   angle of attack and sideslip           [deg]
@@ -12,8 +12,31 @@ function [CX,CY,CZ,Cl,Cm,Cn] = f16_aero(alpha,beta,dh,da,dr,dlef,p,q,r,V,xcg)
 %     p, q, r       body angular rates                     [rad/s]
 %     V             true airspeed                          [m/s]
 %     xcg           c.g. position as a fraction of cbar    [-]
+%     smooth        false (default) or true, see below
 %
 %   Outputs: body-axis force and moment coefficients, moments taken about xcg.
+%
+%   THE SMOOTH OPTION, AND WHY IT EXISTS.
+%
+%   With smooth = false the alpha dependence is interpolated linearly on the
+%   raw 5-degree table grid.  That is what the source model specifies and it
+%   gives the correct coefficient VALUES, so it is right for plotting
+%   coefficients, for root-finding on Cm, and for time simulation.
+%
+%   But linear interpolation makes the SLOPE piecewise constant, jumping at
+%   every table node.  Anything that differentiates the model inherits those
+%   jumps.  Linearising about a trim point at alpha = 9.9 deg and again at
+%   10.1 deg gives dCm/dalpha of 0.00122 and 0.00060, a factor of two apart,
+%   purely from crossing the node at 10 deg.  The eigenvalues jump with it.
+%   Nothing physical happens at 10 degrees; the interpolation is jumping.
+%
+%   With smooth = true the alpha axis is first refined to 0.25 deg using
+%   pchip, and linear interpolation is then applied on the refined grid.
+%   The values are essentially unchanged, but the slope becomes effectively
+%   continuous, which is what eigenvalue analysis and continuation need.
+%
+%   Use smooth = true for: linearisation, eigenvalues, continuation.
+%   Use smooth = false for: coefficient plots, Cm root-finding, simulation.
 %
 %   Coefficient buildup follows Sonneveldt, "Nonlinear F-16 Model
 %   Description", TU Delft 2006, Sec. 2, the companion document to the
@@ -39,22 +62,19 @@ function [CX,CY,CZ,Cl,Cm,Cn] = f16_aero(alpha,beta,dh,da,dr,dlef,p,q,r,V,xcg)
 %      alpha = 35 deg, large above it.  Without it the deep-stall equilibrium
 %      branch is misplaced.
 %
-%   Interpolation is LINEAR throughout, which is what the source model
-%   specifies.  Do not substitute 'spline': the alpha grid is 5 deg spaced to
-%   60 deg then jumps to 70/80/90, and cubic spline overshoot across those
-%   wide nodes invents sign changes in dCm/dalpha that are not in the data.
-%
-%   PERFORMANCE.  The interpolants are built once as griddedInterpolant
-%   objects and cached in a persistent variable.  Calling interpn directly
-%   instead costs roughly ten times more, because interpn reconstructs its
-%   internal interpolant on every call and this function makes about forty
-%   lookups per evaluation.  Over a parameter sweep that is the difference
-%   between two minutes and half an hour.  Call CLEAR FUNCTIONS if you ever
-%   edit F16aerodata.m, otherwise the cached tables will be the old ones.
+%   PERFORMANCE.  Interpolants are built once as griddedInterpolant objects
+%   and cached, separately for each smoothing mode.  Call CLEAR FUNCTIONS if
+%   you edit F16aerodata.m, otherwise the cached tables stay stale.
 
-persistent G
-if isempty(G)
-    G = build_interpolants();
+persistent Graw Gsm
+if nargin < 12 || isempty(smooth), smooth = false; end
+
+if smooth
+    if isempty(Gsm),  Gsm  = build_interpolants(0.25); end
+    G = Gsm;
+else
+    if isempty(Graw), Graw = build_interpolants([]);   end
+    G = Graw;
 end
 
 if nargin < 11, xcg  = 0.35; end
@@ -142,14 +162,43 @@ Cl = Cl0 + (Cl_lef - Cl0_e0)*kl ...
 end
 
 % ------------------------------------------------------------------------
-function G = build_interpolants()
+function G = build_interpolants(dalpha)
 %BUILD_INTERPOLANTS  Read F16aerodata.m once and wrap every table.
+%   dalpha empty  -> raw table grid, linear interpolation (source model)
+%   dalpha scalar -> alpha axis refined to that spacing with pchip first
 
 run('F16aerodata.m');          % defines f16data in this workspace
 D = f16data;
 
 a1 = D.alpha1(:);  a2 = D.alpha2(:);  be = D.beta(:);
 e1 = D.de1(:);     e2 = D.de2(:);     e3 = D.de3(:);
+
+if ~isempty(dalpha)
+    a1n = (a1(1):dalpha:a1(end))';
+    a2n = (a2(1):dalpha:a2(end))';
+
+    for nm = {'CX','CZ','Cm','Cn','Cl'}
+        D.(nm{1}) = refine3(D.(nm{1}), a1, a1n);
+    end
+    for nm = {'CY','CY_da20','CY_dr30','Cn_da20','Cn_dr30','Cl_da20','Cl_dr30'}
+        D.(nm{1}) = refine2(D.(nm{1}), a1, a1n);
+    end
+    for nm = {'CX_lef','CZ_lef','Cm_lef','CY_lef','Cn_lef','Cl_lef', ...
+              'CY_da20lef','Cn_da20lef','Cl_da20lef'}
+        D.(nm{1}) = refine2(D.(nm{1}), a2, a2n);
+    end
+    D.dCm_ds = refine2(D.dCm_ds, a1, a1n);
+    for nm = {'CXq','CZq','Cmq','CYr','CYp','Cnr','Cnp','Clr','Clp', ...
+              'dCm','dCnbeta','dClbeta'}
+        D.(nm{1}) = interp1(a1, D.(nm{1})(:), a1n, 'pchip');
+    end
+    for nm = {'dCXq_lef','dCZq_lef','dCmq_lef','dCYr_lef','dCYp_lef', ...
+              'dCnr_lef','dCnp_lef','dClr_lef','dClp_lef'}
+        D.(nm{1}) = interp1(a2, D.(nm{1})(:), a2n, 'pchip');
+    end
+
+    a1 = a1n;  a2 = a2n;
+end
 
 G.a1lo = a1(1);  G.a1hi = a1(end);
 G.a2lo = a2(1);  G.a2hi = a2(end);
@@ -195,4 +244,25 @@ for nm = {'dCXq_lef','dCZq_lef','dCmq_lef','dCYr_lef','dCYp_lef', ...
     G.(nm{1}) = I1(D.(nm{1}), a2);
 end
 
+end
+
+% ------------------------------------------------------------------------
+function Tn = refine3(T, aold, anew)
+%REFINE3  Pchip-refine the first dimension of a 3-D table.
+[~, nb, nd] = size(T);
+Tn = zeros(numel(anew), nb, nd);
+for j = 1:nb
+    for k = 1:nd
+        Tn(:,j,k) = interp1(aold, T(:,j,k), anew, 'pchip');
+    end
+end
+end
+
+function Tn = refine2(T, aold, anew)
+%REFINE2  Pchip-refine the first dimension of a 2-D table.
+nb = size(T,2);
+Tn = zeros(numel(anew), nb);
+for j = 1:nb
+    Tn(:,j) = interp1(aold, T(:,j), anew, 'pchip');
+end
 end

@@ -1,26 +1,5 @@
 %RUN_PITCH_EQUILIBRIA  Pitch-axis equilibrium map of the nonlinear F-16.
-%
-%   Replacement for the original Trim.m.  What changed and why:
-%
-%   1. The pitching moment now comes from the full aerodynamic buildup
-%      (f16_aero) rather than a single raw table.  That brings in the c.g.
-%      transfer term, the trim increment dCm, the deep-stall increment
-%      dCm_ds and the pitch damping term, none of which were present before.
-%
-%   2. Interpolation is linear, not spline, and it is linear everywhere in
-%      the project.  Spline overshoot across the 60-70-80-90 deg alpha gap
-%      creates spurious sign changes in dCm/dalpha.
-%
-%   3. The c.g. is a swept parameter, because whether the aircraft has a
-%      locked-in deep-stall equilibrium depends on it.  This is the point of
-%      the exercise: NASA TP-1538 is titled "... With Relaxed Longitudinal
-%      Static Stability" for exactly this reason.
-%
-%   4. Roots are found by bracketing on a grid and refining with fzero on the
-%      continuous model, so every crossing is caught once.  The original
-%      "abs(Cm) < 1e-6" branch could double-count a crossing and in practice
-%      never fired.
-%
+
 %   This is pitch-moment equilibrium at a specified flight condition, not
 %   full flight trim.  Use f16_trim for that.  The two answer different
 %   questions: this one maps where the aircraft can sit in pitch, which is

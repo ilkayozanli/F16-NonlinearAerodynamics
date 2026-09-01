@@ -1,15 +1,10 @@
 %PLOT_COEFFICIENTS  Nonlinear F-16 aerodynamic coefficients vs angle of attack.
 %
-%   Replacement for the original f16_parameters.m.  Everything appears in a
-%   single window with tabs along the top rather than six separate figure
-%   windows.  Tabs, in order:
 %
 %       C_X, C_Z, C_m       longitudinal coefficients, three panels each
 %       Lateral-directional CY, Cl, Cn against sideslip
 %       Departure           Cn_beta_dynamic against alpha
 %       Interpolation       linear against spline, methodology figure
-%
-%   What changed from the original script, beyond the layout:
 %
 %   1. Coefficients come from the full buildup in f16_aero, so what is
 %      plotted is what the aircraft actually experiences, not a raw table
@@ -32,9 +27,7 @@
 %      boundary.
 %
 %   Coefficient vector convention: C = [CX CY CZ Cl Cm Cn].
-%
-%   If you would rather have separate windows again, set SINGLE_WINDOW to
-%   false below.
+
 
 clear; close all; clc;
 

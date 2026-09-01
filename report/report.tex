@@ -120,7 +120,242 @@ hyphenation=true    % Hyphenation turn on/off
  
  A related but distinct challenge is that the static coefficients themselves are highly nonlinear functions of angle of attack and sideslip, as shown directly in Figures 9 and 10. Representing such behavior purely as an interpolated lookup table, as in the original wind-tunnel dataset, is functional for simulation but provides little insight into the underlying structure of the nonlinearity and can be cumbersome to update or extend. This has motivated the development of global nonlinear modeling techniques, which fit the tabulated aerodynamic data to compact analytical functions --- for example, multivariate orthogonal polynomial expansions constructed using Gram-Schmidt orthogonalization --- allowing the same nonlinear F-16 aerodynamic characteristics to be expressed in a closed, continuous mathematical form rather than a discrete table \cite{ismail2023}.
  
- Together, these two developments --- unsteady, state-dependent corrections to capture flow history effects, and global nonlinear function fitting to capture the static nonlinearity more compactly --- represent the two principal directions in which high-angle-of-attack aerodynamic modeling has moved beyond the simple static lookup table, and both are necessary building blocks for the stability and bifurcation analysis carried out in later sections of this report.
+ Taken together, these developments define the two directions in which
+ high-angle-of-attack aerodynamic modelling has moved beyond the static lookup
+ table. Global nonlinear function fitting addresses the form of the static
+ nonlinearity, replacing a discrete table with a compact continuous
+ description. State-dependent formulations such as Equation~\eqref{eq:goman}
+ address a more fundamental limitation, namely that the aerodynamic response is
+ not a function of the instantaneous flow condition at all. Both are relevant
+ to the work that follows: the static tabulated model underpins the equilibrium
+ and bifurcation analysis of Sections~5 and~6, while the unsteady state-space
+ formulation is implemented separately in Section~7 in order to quantify the
+ error that the static assumption introduces once the angle of attack is
+ changing rapidly.
+ 
+ The most widely adopted formalisation of these unsteady effects is the
+ state-space representation introduced by Goman and Khrabrov \cite{goman1994}.
+ Rather than correcting a static table after the fact, this approach augments
+ the aerodynamic model with an internal state variable that carries the
+ history of the flow. The variable has a direct physical interpretation: it
+ represents the streamwise position of the flow separation point on the upper
+ surface, normalised so that a value of one corresponds to fully attached flow
+ and a value of zero to complete separation. The aerodynamic coefficients are
+ then expressed as functions of this internal state rather than of angle of
+ attack alone, so that the same instantaneous angle of attack can produce
+ different forces and moments depending on the state of the flow that produced
+ it.
+ 
+ The internal state is governed by a first-order differential equation of the
+ form
+ \begin{equation}
+ 	\tau_{1}\,\dot{x} + x = x_{0}\!\left(\alpha - \tau_{2}\,\dot{\alpha}\right),
+ 	\label{eq:goman}
+ \end{equation}
+ where $x$ is the separation point position, $x_{0}(\alpha)$ is its steady
+ value as a function of angle of attack, and $\tau_{1}$ and $\tau_{2}$ are time
+ constants. The two constants play distinct roles. The relaxation time
+ $\tau_{1}$ sets how quickly the separated flow adjusts towards its steady
+ configuration after a change in angle of attack, and therefore controls the
+ memory of the model. The convection lag $\tau_{2}$ shifts the argument of
+ $x_{0}$ so that the separation responds to a slightly delayed angle of attack
+ whenever $\alpha$ is changing, which represents the finite time taken for a
+ disturbance to convect over the surface. The steady characteristic
+ $x_{0}(\alpha)$ is not an additional assumption: it can be recovered directly
+ from static wind tunnel data by inverting the Kirchhoff relation for the
+ normal force. In steady flight $\dot{x}$ and $\dot{\alpha}$ both vanish, $x$
+ equals $x_{0}(\alpha)$, and the formulation reduces exactly to the static
+ model, so nothing is lost in the regime where the static tables are already
+ valid.
+ 
+ The practical consequence of Equation~\eqref{eq:goman} is aerodynamic
+ hysteresis. When the angle of attack oscillates through the stall region, the
+ separation point lags behind its steady value, and the coefficient measured
+ while the angle of attack is increasing differs from the coefficient at the
+ same angle while it is decreasing. A static lookup table traces a single curve
+ in the coefficient--angle-of-attack plane and can never reproduce this
+ behaviour; the state-space model traces a closed loop whose width depends on
+ the rate of the motion. It should be noted that $\tau_{1}$ and $\tau_{2}$ are
+ determined from forced-oscillation wind tunnel testing and are not contained
+ in the static F-16 dataset used in this work \cite{vanoort2006}. The
+ implementation presented in Section~7 therefore treats them as parameters to
+ be varied rather than as known constants, and demonstrates that the
+ qualitative hysteresis behaviour is present across the plausible range.
+ 
+ 
+ \section{Model and Methodology}
+ 
+ \subsection{Aerodynamic Dataset and Reference Quantities}
+ 
+ All aerodynamic data used in this work originate from the wind tunnel
+ programme documented in NASA Technical Paper 1538 \cite{nguyen1979}, in the
+ digitised form compiled by van Oort and Sonneveldt \cite{vanoort2006}. The
+ dataset comprises approximately forty-five tables covering the six force and
+ moment coefficients as functions of angle of attack, sideslip angle and
+ control surface deflection, together with dynamic derivative tables,
+ leading-edge-flap increments and a deep-stall pitching moment increment. The
+ angle-of-attack grid extends from $-20^{\circ}$ to $90^{\circ}$ at
+ $5^{\circ}$ intervals up to $60^{\circ}$, with the remaining points at
+ $70^{\circ}$, $80^{\circ}$ and $90^{\circ}$; the sideslip grid spans
+ $\pm30^{\circ}$.
+ 
+ The coefficients are non-dimensionalised using the reference quantities of
+ the simulation model rather than the physical dimensions of the aircraft, and
+ the distinction matters. The reference wing area is
+ $S = 27.87\,\mathrm{m^{2}}$, the reference span is $b = 9.144\,\mathrm{m}$ and
+ the mean aerodynamic chord is $\bar{c} = 3.450\,\mathrm{m}$
+ \cite{nguyen1979,stevenslewis}. The reference span corresponds to
+ $30\,\mathrm{ft}$ and is smaller than the physical span over the wingtip
+ launchers; using the latter would introduce a systematic error of
+ approximately three per cent in every rolling and yawing moment and in every
+ roll and yaw damping term. Mass and inertia properties correspond to the
+ nominal loading of the simulation model: $m = 9295.44\,\mathrm{kg}$,
+ $I_{xx} = 12874.8$, $I_{yy} = 75673.6$, $I_{zz} = 85552.1$ and
+ $I_{xz} = 1331.4\,\mathrm{kg\,m^{2}}$, with an engine angular momentum of
+ $216.9\,\mathrm{kg\,m^{2}/s}$ about the longitudinal axis
+ \cite{stevenslewis}. All tabulated moments are referenced to a centre of
+ gravity at $0.35\bar{c}$.
+ 
+ \subsection{Coefficient Buildup}
+ 
+ The tabulated data cannot be used directly as coefficients; they must be
+ assembled according to the formulation of the original model
+ \cite{sonneveldt2006}. Three aspects of this assembly are structurally
+ important and are easily misapplied.
+ 
+ First, the leading-edge-flap tables are not increments. Each such table gives
+ the total coefficient with the flap fully deployed, so the increment must be
+ formed as the difference between the deployed-flap value and the clean value
+ at zero stabilator deflection, and is then scaled linearly by
+ $(1 - \delta_{\mathrm{lef}}/25)$. Treating these tables as increments
+ directly produces a model that is incorrect at every flap setting including
+ the retracted one.
+ 
+ Second, the moment coefficients require centre-of-gravity transfer terms.
+ Since the tables are referenced to $0.35\bar{c}$, any other centre of gravity
+ requires
+ \begin{equation}
+ 	C_{m} = C_{m,\mathrm{table}} + C_{Z}\left(x_{cg,\mathrm{ref}} - x_{cg}\right),
+ 	\qquad
+ 	C_{n} = C_{n,\mathrm{table}} - C_{Y}\left(x_{cg,\mathrm{ref}} - x_{cg}\right)\frac{\bar{c}}{b}.
+ 	\label{eq:cgtransfer}
+ \end{equation}
+ Omitting these terms restricts every stability result to the reference centre
+ of gravity. This is not a minor restriction, since centre-of-gravity position
+ is the parameter that governs the existence of the deep-stall equilibrium
+ examined in Section~\ref{sec:static}.
+ 
+ Third, the deep-stall pitching moment increment must be included. This term
+ is zero below approximately $35^{\circ}$ angle of attack and becomes large
+ above it, and without it the high-angle-of-attack equilibrium branch is
+ displaced.
+ 
+ Control surface effects are introduced as increments scaled linearly by
+ deflection, using $\delta_{a}/20$ for the ailerons and $\delta_{r}/30$ for
+ the rudder, consistent with the deflections at which the increment tables
+ were measured. Dynamic terms are non-dimensionalised by $\bar{c}/2V$ for pitch
+ rate and $b/2V$ for roll and yaw rate.
+ 
+ Two simplifications are adopted and should be stated explicitly. The
+ stabilator effectiveness factor $\eta(\delta_{h})$ of the original NASA
+ formulation is not present in the digitised dataset and is therefore taken as
+ unity. The leading-edge flap is held retracted throughout, rather than
+ following its scheduled deflection. The second choice is deliberate: holding
+ the flap fixed isolates the behaviour of the airframe from that of its
+ control system, which is appropriate for a stability study of the bare
+ aircraft.
+ 
+ \subsection{Interpolation}
+ 
+ The source model specifies linear interpolation, and linear interpolation is
+ used wherever coefficient values are required. The choice is not neutral,
+ however, and the reason is worth stating because it affects part of the
+ analysis directly.
+ 
+ Linear interpolation reproduces the tabulated values exactly and errs only
+ between nodes. Comparison against cubic spline interpolation shows the
+ largest disagreement anywhere in the dataset to be approximately $0.16$ in
+ $C_{Z}$ at full nose-down stabilator, and approximately $0.009$ in $C_{m}$ at
+ zero deflection, in both cases concentrated near $\alpha = 85^{\circ}$ where
+ the grid is sparsest. For the purpose of evaluating coefficients, this is
+ acceptable and the linear scheme is preferred because it matches the source.
+ 
+ The situation is different for any calculation that differentiates the model.
+ Linear interpolation produces a slope that is constant within each interval
+ and discontinuous at every node, and eigenvalues of the linearised dynamics
+ depend on that slope rather than on the coefficient value. Crossing the node
+ at $\alpha = 10^{\circ}$ changes $\partial C_{m}/\partial\alpha$ by a factor
+ of two and causes the computed growth rate to jump from $0.33$ to
+ $1.12\,\mathrm{s^{-1}}$, with no corresponding change in the physics. For the
+ eigenvalue and continuation analyses of Section~\ref{sec:dynamic}, the
+ angle-of-attack axis is therefore first refined to $0.25^{\circ}$ using
+ monotone piecewise cubic interpolation, after which linear interpolation is
+ applied on the refined grid. Coefficient values are essentially unchanged and
+ the slope becomes effectively continuous.
+ 
+ \subsection{Equations of Motion}
+ 
+ The aircraft is modelled as a rigid body with eight states,
+ \begin{equation}
+ 	\mathbf{x} = \left[\,V,\ \alpha,\ \beta,\ p,\ q,\ r,\ \phi,\ \theta\,\right]^{T},
+ 	\qquad
+ 	\mathbf{u} = \left[\,\delta_{t},\ \delta_{h},\ \delta_{a},\ \delta_{r}\,\right]^{T},
+ 	\label{eq:states}
+ \end{equation}
+ following the formulation used by Kolb \cite{kolb2017} for a comparable study
+ of the F-18, so that the two sets of results are directly comparable.
+ Altitude is treated as a fixed parameter rather than a state and is held at
+ sea level throughout; heading is omitted because no term in the model depends
+ on it. The rotational equations retain the $I_{xz}$ cross-product of inertia
+ and the gyroscopic contribution of engine angular momentum. Engine spool
+ dynamics are not modelled, so thrust follows the throttle command directly.
+ 
+ Thrust is obtained from the idle, military and maximum tables of the original
+ model, interpolated in Mach number and altitude and blended by commanded
+ power level \cite{nguyen1979,stevenslewis}. Atmospheric properties follow the
+ International Standard Atmosphere.
+ 
+ \subsection{Trim and Equilibrium Families}
+ 
+ Trim requires the simultaneous solution of three conditions: force balance
+ along the flight path, force balance normal to it, and moment balance about
+ the centre of gravity. Solving the moment condition alone, that is, locating
+ the zeros of $C_{m}(\alpha)$, yields angles of attack at which the pitching
+ moment vanishes but at which the aircraft is not in equilibrium, since
+ nothing constrains lift to balance weight.
+ 
+ Two distinct equilibrium families are used in this work. The first fixes
+ airspeed and flight path angle and solves for throttle, stabilator and angle
+ of attack; this is conventional trim and is used for verification. The second
+ fixes throttle and allows the flight path angle to float, solving for
+ stabilator, angle of attack and flight path angle. The second family is
+ necessary because level flight cannot reach high angle of attack: sustaining
+ altitude above approximately $7^{\circ}$ at sea level requires an airspeed
+ below that at which the aircraft can support its own weight. Allowing the
+ aircraft to descend extends the family to $\alpha = 40^{\circ}$ and beyond, at
+ flight path angles reaching $-37^{\circ}$. These remain genuine equilibria of
+ the full system, with all angular rates, sideslip and bank angle zero.
+ 
+ \subsection{Verification}
+ 
+ The implementation is verified against the standard published trim case for
+ straight and level flight at $152.4\,\mathrm{m/s}$ ($500\,\mathrm{ft/s}$) at
+ sea level with the centre of gravity at $0.35\bar{c}$. The solver returns
+ $\alpha = 2.006^{\circ}$, $\delta_{h} = -0.209^{\circ}$ and a throttle setting
+ of $0.128$, with a maximum residual of $9.9\times10^{-13}$, in agreement with
+ the reference solution \cite{stevenslewis}.
+ 
+ Linearisation about this point yields the eigenvalues
+ $-3.60$, $-0.40 \pm 2.85\mathrm{i}$, $-0.019 \pm 0.123\mathrm{i}$, $-0.016$,
+ $+0.571$ and $-2.671\,\mathrm{s^{-1}}$, corresponding respectively to roll
+ subsidence, dutch roll, phugoid, spiral, and a pitch mode which has split
+ into two real roots rather than forming an oscillatory short period. The
+ positive real root, with a time to double of approximately $1.2\,\mathrm{s}$,
+ is the relaxed longitudinal static stability of the bare airframe and is
+ consistent with the title and purpose of the original NASA study
+ \cite{nguyen1979}.
+ 
+ 
 	
  \printbibliography
  
