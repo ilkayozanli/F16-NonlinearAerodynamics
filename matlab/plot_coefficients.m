@@ -1,10 +1,16 @@
 %PLOT_COEFFICIENTS  Nonlinear F-16 aerodynamic coefficients vs angle of attack.
 %
+%   Replacement for the original f16_parameters.m.  Everything appears in a
+%   single window with tabs along the top rather than six separate figure
+%   windows.  Tabs, in order:
 %
 %       C_X, C_Z, C_m       longitudinal coefficients, three panels each
+%       Lift and drag       C_L, C_D and L/D in wind axes
 %       Lateral-directional CY, Cl, Cn against sideslip
 %       Departure           Cn_beta_dynamic against alpha
 %       Interpolation       linear against spline, methodology figure
+%
+%   What changed from the original script, beyond the layout:
 %
 %   1. Coefficients come from the full buildup in f16_aero, so what is
 %      plotted is what the aircraft actually experiences, not a raw table
@@ -27,7 +33,9 @@
 %      boundary.
 %
 %   Coefficient vector convention: C = [CX CY CZ Cl Cm Cn].
-
+%
+%   If you would rather have separate windows again, set SINGLE_WINDOW to
+%   false below.
 
 clear; close all; clc;
 
@@ -117,6 +125,58 @@ for li = 1:3
     legend(ax, arrayfun(@(a) sprintf('\\alpha = %d\\circ', a), alpha_cases, ...
         'UniformOutput', false), 'Location','best');
 end
+
+%% ---- Lift and drag: the wind-axis view ---------------------------------
+% The dataset contains body-axis forces only.  Lift and drag are wind-axis
+% quantities and must be obtained by rotating through the angle of attack:
+%
+%     C_N = -C_Z          normal force        C_A = -C_X   axial force
+%     C_L =  C_N cos(alpha) - C_A sin(alpha)
+%     C_D =  C_N sin(alpha) + C_A cos(alpha)
+%
+% This matters for the argument of the report.  A linear model assumes C_L
+% proportional to alpha and C_D quadratic in C_L.  Neither holds here: the
+% lift curve bends over and reverses, and the drag rise is not quadratic.
+CL = zeros(size(alpha));  CD = zeros(size(alpha));
+for i = 1:numel(alpha)
+    C  = coefs(alpha(i), 0, 0, V, xcg);
+    CN = -C(3);  CA = -C(1);
+    ar = deg2rad(alpha(i));
+    CL(i) = CN*cos(ar) - CA*sin(ar);
+    CD(i) = CN*sin(ar) + CA*cos(ar);
+end
+
+parent = new_page(tg, 'Lift and drag', 'Lift and drag');
+
+ax = stack_axes(parent, 3, 1);
+plot(ax, alpha, CL, 'LineWidth', 1.8); grid(ax,'on');
+hold(ax,'on');
+lin = alpha >= 0 & alpha <= 10;
+pc  = polyfit(alpha(lin), CL(lin), 1);
+plot(ax, alpha, polyval(pc, alpha), '--', 'LineWidth', 1.2);
+ylim(ax, [min(CL)-0.2, max(CL)+0.4]);
+xlabel(ax,'\alpha (deg)'); ylabel(ax,'C_L');
+legend(ax, {'C_L from the model', ...
+    sprintf('linear extrapolation of the 0-10\\circ slope (%.3f /deg)', pc(1))}, ...
+    'Location','southeast');
+[CLmax, im] = max(CL);
+title(ax, sprintf(['Lift curve: departs from linear beyond about 10\\circ, ' ...
+                   'C_{L,max} = %.2f at \\alpha = %.0f\\circ'], CLmax, alpha(im)));
+
+ax = stack_axes(parent, 3, 2);
+plot(ax, alpha, CD, 'LineWidth', 1.8); grid(ax,'on');
+xlabel(ax,'\alpha (deg)'); ylabel(ax,'C_D');
+title(ax,'Drag coefficient: monotonic rise, not a quadratic in C_L');
+
+ax = stack_axes(parent, 3, 3);
+plot(ax, alpha, CL./max(CD,1e-6), 'LineWidth', 1.8); grid(ax,'on');
+[LDmax, il] = max(CL./max(CD,1e-6));
+xlabel(ax,'\alpha (deg)'); ylabel(ax,'L/D');
+title(ax, sprintf('Lift-to-drag ratio, maximum %.1f at \\alpha = %.0f\\circ', ...
+    LDmax, alpha(il)));
+
+fprintf('C_L,max = %.3f at alpha = %.1f deg;  (L/D)_max = %.1f at alpha = %.1f deg\n', ...
+    CLmax, alpha(im), LDmax, alpha(il));
 
 %% ---- Departure criterion: Cn_beta_dynamic ------------------------------
 % Cn_beta_dyn = Cn_beta*cos(alpha) - (Izz/Ixx)*Cl_beta*sin(alpha)
