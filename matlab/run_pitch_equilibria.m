@@ -13,7 +13,7 @@
 
 clear; close all; clc;
 
-QUALITY = 'draft';         % 'draft' or 'final'
+QUALITY = 'final';         % 'draft' or 'final'
 
 switch QUALITY
     case 'draft'

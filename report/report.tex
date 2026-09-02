@@ -17,6 +17,8 @@ hyphenation=true    % Hyphenation turn on/off
 ]{src/wut-thesis}
 
 \graphicspath{{tex/img/}}
+\usepackage{graphicx}
+\graphicspath{{plots/}}
 
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
@@ -342,18 +344,642 @@ hyphenation=true    % Hyphenation turn on/off
  straight and level flight at $152.4\,\mathrm{m/s}$ ($500\,\mathrm{ft/s}$) at
  sea level with the centre of gravity at $0.35\bar{c}$. The solver returns
  $\alpha = 2.006^{\circ}$, $\delta_{h} = -0.209^{\circ}$ and a throttle setting
- of $0.128$, with a maximum residual of $9.9\times10^{-13}$, in agreement with
- the reference solution \cite{stevenslewis}.
+ of $0.128$, with a numerical residual of ($9.9\times10^{-13}$). The published F-16 trim data give values close to ($\alpha=2.11^\circ$), ($\delta_e=-0.76^\circ$), and ($\delta_t=0.14$) for a comparable condition \cite{stevenslewis}.
+ 
+ The differences arise from the modifications introduced in the present reduced-order implementation, including the use of a fixed stabilator effectiveness factor, the retracted leading-edge flap assumption, and the simplified propulsion model. Therefore, the comparison is used to assess consistency of the implemented equilibrium formulation rather than to claim exact reproduction of the original reference model. The very small residual confirms numerical convergence of the present trim solution.
  
  Linearisation about this point yields the eigenvalues
  $-3.60$, $-0.40 \pm 2.85\mathrm{i}$, $-0.019 \pm 0.123\mathrm{i}$, $-0.016$,
  $+0.571$ and $-2.671\,\mathrm{s^{-1}}$, corresponding respectively to roll
  subsidence, dutch roll, phugoid, spiral, and a pitch mode which has split
- into two real roots rather than forming an oscillatory short period. The
- positive real root, with a time to double of approximately $1.2\,\mathrm{s}$,
- is the relaxed longitudinal static stability of the bare airframe and is
- consistent with the title and purpose of the original NASA study
- \cite{nguyen1979}.
+ into two real roots rather than forming an oscillatory short period. The positive real root, with a time to double of approximately \(1.2\,\mathrm{s}\), indicates an unstable longitudinal mode of the bare airframe, consistent with the relaxed longitudinal static stability investigated in the original NASA study \cite{nguyen1979}.
+ 
+ 
+ 
+ \section{Static Aerodynamic Characteristics and Equilibria}
+ \label{sec:static}
+ 
+ \subsection{Lift and Drag}
+ 
+ The dataset provides body-axis force coefficients only. Lift and drag are
+ wind-axis quantities and are obtained by rotating the body-axis force through
+ the angle of attack. At zero sideslip,
+ \begin{equation}
+ 	C_{L} = C_{X}\sin\alpha - C_{Z}\cos\alpha,
+ 	\qquad
+ 	C_{D} = -C_{X}\cos\alpha - C_{Z}\sin\alpha .
+ 	\label{eq:windaxes}
+ \end{equation}
+ The transformation was verified against the converged trim solution of
+ \ref{Section:4.6}, which is computed entirely in body axes and never uses
+ $C_{L}$ or $C_{D}$. At that condition the lift obtained from
+ Equation~\eqref{eq:windaxes}, together with the vertical component of thrust,
+ balances the aircraft weight to $91\,157.1\,\mathrm{N}$ on both sides, and the
+ drag balances the horizontal component of thrust to $8604.9\,\mathrm{N}$ on
+ both sides. The agreement is exact to the precision of the solver.
+ 
+ 
+ 
+ \begin{figure}[htbp]
+ 	\centering
+ 	\includegraphics[width=0.85\textwidth]{lift_and_drag.png}
+ 	\caption{Wind-axis coefficients derived from the body-axis dataset. Upper
+ 		panel: lift coefficient, with the linear extrapolation of the
+ 		$0^{\circ}$ to $10^{\circ}$ slope shown dashed. Centre panel: drag
+ 		coefficient. Lower panel: lift-to-drag ratio.}
+ 	\label{fig:liftdrag}
+ \end{figure}
+ 
+ Figure~\ref{fig:liftdrag} shows the result. The lift curve follows its
+ low-incidence linear extrapolation closely up to approximately $10^{\circ}$
+ and departs from it progressively thereafter. The maximum lift coefficient of
+ $1.72$ occurs at $\alpha = 35^{\circ}$, well beyond the angle at which the
+ outer wing panels stall. This is consistent with the wind tunnel
+ flow-visualisation results discussed in Section~2, in which the outer panels
+ were observed to stall near $\alpha = 20^{\circ}$ while the wing-body strake
+ continued to generate lift to a maximum near $35^{\circ}$ \cite{nguyen1979}.
+ The agreement is a useful check: the figure quoted in the literature is
+ reproduced by the present model, which was assembled independently from the
+ tabulated data.
+ 
+ The drag coefficient rises monotonically across the whole range and does not
+ follow the classical parabolic polar $C_{D} = C_{D_{0}} + kC_{L}^{2}$. Beyond
+ $35^{\circ}$ the lift coefficient falls while the drag continues to increase,
+ a combination the parabolic form cannot represent at all. The lift-to-drag
+ ratio reaches a maximum of approximately $10.5$ near $\alpha = 5^{\circ}$ and
+ falls to approximately unity by $45^{\circ}$.
+ 
+ It is worth noting that the contribution of thrust to the vertical force
+ balance is negligible at low incidence, amounting to some $0.3$ per cent of
+ the weight at the trim condition examined above, but is not negligible at high
+ angle of attack, where the thrust vector is inclined substantially relative to
+ the flight path.
+ 
+ \subsection{Pitching Moment and Control Effectiveness}
+ 
+ % ---------------------------------------------------------------------
+ % FIGURE: run plot_coefficients.m, tab "C_m".
+ % Export the whole tab (three panels).
+ % ---------------------------------------------------------------------
+ \begin{figure}[htbp]
+ 	\centering
+ 	\includegraphics[width=0.85\textwidth]{Cm_plots.png}
+ 	\caption{Pitching moment coefficient against angle of attack. Upper panel:
+ 		baseline at zero sideslip and zero stabilator deflection. Centre panel:
+ 		effect of stabilator deflection across its full range. Lower panel: effect
+ 		of sideslip.}
+ 	\label{fig:cm}
+ \end{figure}
+ 
+ Figure~\ref{fig:cm} shows the pitching moment coefficient. Three features
+ distinguish it from the behaviour assumed by linear stability theory.
+ 
+ The slope $\partial C_{m}/\partial\alpha$ changes sign more than once across
+ the range, so the aircraft is neither uniformly stable nor uniformly unstable
+ in pitch; static stability is a property of the flight condition rather than
+ of the airframe alone. The stabilator increments are not uniform with angle of
+ attack, so control effectiveness itself varies with flight condition, and in
+ particular the nose-down authority available at high incidence is not the same
+ as that available in cruise. The response to sideslip is not symmetric in the
+ manner a linear model requires.
+ 
+ The consequence for equilibrium is direct. In a linear model there is exactly
+ one angle of attack at which the pitching moment vanishes for each stabilator
+ setting. Here there may be none, one, or several, and which case applies
+ depends on both the stabilator deflection and the centre-of-gravity position.
+ 
+ \subsection{Pitch Equilibria and the Deep Stall}
+ 
+ % ---------------------------------------------------------------------
+ % FIGURE: run run_pitch_equilibria.m with QUALITY = 'final'.
+ % Single figure window.
+ % ---------------------------------------------------------------------
+ \begin{figure}[htbp]
+ 	\centering
+ 	\includegraphics[width=0.85\textwidth]{Pitch equilibrium map.png}
+ 	\caption{Pitch-axis equilibria as a function of stabilator deflection at
+ 		three centre-of-gravity positions. Filled markers denote statically stable
+ 		equilibria, crosses statically unstable ones. Positive stabilator
+ 		deflection is trailing edge down and produces a nose-down moment.}
+ 	\label{fig:pitcheq}
+ \end{figure}
+ 
+ Figure~\ref{fig:pitcheq} presents the angles of attack at which the assembled
+ pitching moment vanishes, obtained over a sweep of stabilator deflection at
+ three centre-of-gravity positions, with each equilibrium classified by the
+ sign of $\partial C_{m}/\partial\alpha$ evaluated at the root.
+ 
+ Two results follow. First, at the reference centre of gravity of
+ $0.35\bar{c}$ the low-incidence equilibrium is statically unstable. This is
+ not an artefact but the intended characteristic of the aircraft, which is
+ flown with relaxed longitudinal static stability and depends on its flight
+ control system for pitch stabilisation \cite{nguyen1979}.
+ 
+Second, a statically stable equilibrium exists at high angle of attack with the stabilator at its full nose-down limit. At this condition, the available nose-down control authority is fully applied, yet the aircraft retains a stable high-incidence equilibrium. The equilibrium analysis therefore indicates a deep-stall-like state from which the stabilator alone cannot eliminate the high-incidence equilibrium. The predicted equilibrium occurs above \(70^\circ\), and this value should not be interpreted as a quantitative prediction of the physical F-16 deep-stall angle, as discussed in Section 8.
+
+ 
+ The same figure shows that this behaviour is absent at $0.30\bar{c}$, where
+ the high-incidence stable branch exists only for nose-up deflections and
+ nose-down control therefore always recovers the aircraft. The transition
+ between the two situations is examined next.
+ 
+ \subsection{Continuation in Centre-of-Gravity Position}
+ 
+ % ---------------------------------------------------------------------
+ % FIGURE: run run_cg_bifurcation.m. Single figure window.
+ % ---------------------------------------------------------------------
+ \begin{figure}[htbp]
+ 	\centering
+ 	\includegraphics[width=0.85\textwidth]{Cg_bifurcation.png}
+ 	\caption{Equilibrium angles of attack at full nose-down stabilator
+ 		($\delta_{h} = +25^{\circ}$) as a function of centre-of-gravity position.
+ 		The dashed line marks the critical position at which a stable and an
+ 		unstable equilibrium appear together.}
+ 	\label{fig:cgbif}
+ \end{figure}
+ 
+ Holding the stabilator at its full nose-down limit and treating the centre of
+ gravity as the varied parameter isolates the onset of the deep stall.
+ Figure~\ref{fig:cgbif} shows the result. Forward of a critical position no
+ equilibrium exists at high angle of attack. Aft of it, a stable and an
+ unstable equilibrium appear simultaneously and separate as the centre of
+ gravity moves further aft. The critical position, located by bisection, is
+ $x_{cg} = 0.3071\bar{c}$.
+ 
+ The simultaneous creation of a stable and an unstable equilibrium as a
+ parameter crosses a threshold is a saddle-node, or fold, bifurcation. Its
+ significance here is qualitative: the deep-stall state does not become
+ gradually more probable as the centre of gravity moves aft. It does not exist
+ below the threshold and it exists above it.
+ 
+ A second and more practically relevant trend appears in the same figure. The
+ unstable branch forms the boundary between the set of states that return to
+ normal flight and the set that converge to the deep stall. That branch
+ descends steadily as the centre of gravity moves aft, from approximately
+ $69^{\circ}$ at $0.31\bar{c}$ to approximately $42^{\circ}$ at
+ $0.375\bar{c}$. Crossing the threshold therefore creates the deep-stall state,
+ while moving further aft progressively reduces the disturbance required to
+ reach it. The two effects are distinct, and only the first is a bifurcation.
+ 
+ 
+ \section{Dynamic Stability}
+ \label{sec:dynamic}
+ 
+ \subsection{Method}
+ 
+ Static stability determines whether the pitching moment opposes a change in
+ angle of attack. It cannot determine whether a disturbance oscillates, how
+ rapidly it grows or decays, or whether longitudinal and lateral motion
+ interact. These require the eigenvalues of the linearised dynamics.
+ 
+ The eight-state model of Equation~\eqref{eq:states} is linearised numerically
+ about each member of the descending equilibrium family described in
+ \ref{Section:4.5}, and the eigenvalues of the resulting Jacobian are computed. Modes
+ are identified from the participation of each state in the corresponding
+ eigenvector, following the approach used by Kolb \cite{kolb2017}, rather than
+ by sorting eigenvalues by magnitude. Sorting by magnitude relabels modes
+ whenever two of them exchange frequency, which both fragments the resulting
+ curves and produces spurious apparent bifurcations.
+ 
+ \subsection{Three Regimes of Stability}
+ 
+ % ---------------------------------------------------------------------
+ % FIGURE: run run_modal_analysis.m, tab "Growth rate".
+ % This is the single most important figure in the report.
+ % ---------------------------------------------------------------------
+ \begin{figure}[htbp]
+ 	\centering
+ 	\includegraphics[width=0.85\textwidth]{growth_rate.png}
+ 	\caption{Largest real part of the eigenvalues along the equilibrium family,
+ 		coloured according to whether the least stable mode belongs to the
+ 		longitudinal or the lateral-directional family. Values above zero indicate
+ 		a divergent bare airframe.}
+ 	\label{fig:growth}
+ \end{figure}
+ 
+ Figure~\ref{fig:growth} shows the largest real part of the eigenvalue set as a
+ function of trim angle of attack. Three distinct regimes are apparent.
+ 
+ Below approximately $15^{\circ}$ the aircraft is unstable, and the unstable
+ mode is longitudinal. This is the relaxed static stability already identified
+ in Section~\ref{sec:static}, now expressed as a growth rate rather than a
+ slope sign.
+ 
+ Between approximately $15^{\circ}$ and $31^{\circ}$ the bare airframe is
+ stable. Every eigenvalue lies in the left half plane, and no augmentation is
+ required for stability in this band.
+ 
+ Above approximately $32^{\circ}$ the aircraft is unstable again, but the
+ unstable mode is now lateral-directional. The change of family is important:
+ the aircraft does not simply become unstable once more, it becomes unstable by
+ a different mechanism in a different axis. The two mechanisms are examined
+ separately below.
+ 
+ \subsection{Dutch-Roll Instability and Hopf-Type Stability Boundary}
+ 
+ % ---------------------------------------------------------------------
+ % FIGURE: run run_modal_analysis.m, tab "Damping".
+ % ---------------------------------------------------------------------
+ \begin{figure}[htbp]
+ 	\centering
+ 	\includegraphics[width=0.85\textwidth]{damping.png}
+ 	\caption{Damping ratio of the oscillatory modes, identified by eigenvector
+ 		participation. A crossing below zero indicates a complex conjugate pair
+ 		entering the right half plane, that is, a Hopf bifurcation.}
+ 	\label{fig:damping}
+ \end{figure}
+ 
+ Figure~\ref{fig:damping} shows the damping ratios of the oscillatory modes.
+ The dutch roll damping decreases steadily from approximately $0.31$ at
+ $\alpha = 20^{\circ}$ and crosses zero near $\alpha = 32^{\circ}$, at a
+ frequency of approximately $1.1\,\mathrm{rad/s}$ corresponding to a period of
+ about $5.6\,\mathrm{s}$.
+ 
+ At approximately \(\alpha=32\text{--}33^\circ\), the Dutch-roll eigenvalue pair approaches and crosses the imaginary axis, indicating the onset of lateral-directional dynamic instability. This eigenvalue crossing is consistent with a Hopf-type stability boundary. However, because the present study does not calculate the first Lyapunov coefficient or perform a nonlinear time-domain simulation demonstrating a finite-amplitude periodic solution, a complete nonlinear Hopf bifurcation cannot be established from the present analysis alone.
+ 
+ 
+ A second feature of Figure~\ref{fig:damping} is worth noting. Above
+ approximately $22.5^{\circ}$ the roll subsidence and spiral modes, both real
+ roots at lower angles of attack, coalesce into a slow and heavily damped
+ oscillation. Mode coalescence of this kind is itself a nonlinear effect with
+ no counterpart in a fixed-structure linear model.
+ 
+ \subsection{Directional Divergence}
+ 
+ \begin{figure}[htbp]
+ 	\centering
+ 	\includegraphics[width=0.85\textwidth]{real_roots.png}
+ 	\caption{Real parts of the non-oscillatory modes. A crossing above zero
+ 		indicates a divergence rather than a growing oscillation.}
+ 	\label{fig:realroots}
+ \end{figure}
+ 
+ Beyond the Hopf bifurcation a second and more severe instability appears. Near
+ $\alpha = 34^{\circ}$ a real eigenvalue crosses into the right half plane,
+ with an eigenvector dominated by sideslip angle and yaw rate. This is not an
+ oscillation but a directional divergence, in which sideslip grows
+ monotonically. It corresponds to the departure mode commonly termed nose
+ slice.
+ 
+ Figure~\ref{fig:realroots} also shows the low-angle-of-attack behaviour of the
+ pitch mode. Below approximately $15^{\circ}$ it consists of two real roots
+ rather than an oscillatory short period, one divergent and one convergent. The
+ divergent root is the relaxed static stability of the airframe; the short
+ period only becomes oscillatory above $15^{\circ}$, which is consistent with
+ its appearance in Figure~\ref{fig:damping} at the same angle.
+ 
+ \subsection{Independent Confirmation of the Departure Boundary}
+ 
+ % ---------------------------------------------------------------------
+ % FIGURE: run plot_coefficients.m, tab "Departure".
+ % ---------------------------------------------------------------------
+ \begin{figure}[htbp]
+ 	\centering
+ 	\includegraphics[width=0.85\textwidth]{departure.png}
+ 	\caption{Dynamic directional stability parameter
+ 		$C_{n\beta,\mathrm{dyn}}$ against angle of attack. Negative values indicate
+ 		susceptibility to directional divergence.}
+ 	\label{fig:departure}
+ \end{figure}
+ 
+ The classical departure criterion for directional divergence is the dynamic
+ directional stability parameter
+ \begin{equation}
+ 	C_{n\beta,\mathrm{dyn}} = C_{n\beta}\cos\alpha
+ 	- \frac{I_{zz}}{I_{xx}}\,C_{l\beta}\sin\alpha,
+ 	\label{eq:cnbdyn}
+ \end{equation}
+ which predicts departure where it becomes negative. Evaluated from the static
+ coefficients, Equation~\eqref{eq:cnbdyn} crosses zero at
+ $\alpha = 34.0^{\circ}$, as shown in Figure~\ref{fig:departure}.
+ 
+ The eigenvalue analysis places the directional divergence at
+ $\alpha = 33.9^{\circ}$. These two predictions are obtained by entirely
+ independent routes: the first from two static derivatives and an inertia
+ ratio, with no dynamics involved; the second from the eigenvalues of a
+ linearised eight-state model at a trimmed equilibrium. Their agreement to
+ within $0.1^{\circ}$ provides mutual validation of the model implementation
+ and of the criterion.
+ 
+ It should be noted that $C_{n\beta,\mathrm{dyn}}$ is negative only over a
+ bounded interval, approximately $34^{\circ}$ to $39^{\circ}$, rather than
+ remaining negative at all higher angles.
+ 
+ 
+ \section{Unsteady Aerodynamic Modelling}
+ \label{sec:unsteady}
+ 
+ \subsection{Recovering the Separation State}
+ 
+ % ---------------------------------------------------------------------
+ % FIGURE: run run_goman_khrabrov.m, tab "Separation point".
+ % Optional. Include if you have room; the hysteresis figure matters more.
+ % ---------------------------------------------------------------------
+ \begin{figure}[htbp]
+ 	\centering
+ 	\includegraphics[width=0.75\textwidth]{seperation_point.png}
+ 	\caption{Steady separation point position $x_{0}$ recovered from the
+ 		tabulated static normal force by inversion of the Kirchhoff relation.}
+ 	\label{fig:sep}
+ \end{figure}
+ 
+ The state-space formulation of Equation~\eqref{eq:goman} requires the steady
+ separation characteristic $x_{0}(\alpha)$. This is obtained from the static
+ dataset itself by inverting the Kirchhoff relation for the normal force, with
+ the attached-flow slope fitted over the range $4^{\circ}$ to $12^{\circ}$
+ giving $C_{N\alpha} \approx 4.03$ per radian. The resulting curve, shown in
+ Figure~\ref{fig:sep}, is unity below approximately $17^{\circ}$, indicating
+ fully attached flow, and decreases monotonically thereafter, reaching
+ approximately $0.87$ at $30^{\circ}$ and $0.58$ at $45^{\circ}$. The model is
+ therefore meaningful only above the onset of separation; below it there is no
+ separated flow to lag.
+ 
+ \subsection{Aerodynamic Hysteresis}
+ 
+ % ---------------------------------------------------------------------
+ % FIGURE: run run_goman_khrabrov.m, tab "Hysteresis loops".
+ % This is the key figure for this section.
+ % ---------------------------------------------------------------------
+ \begin{figure}[htbp]
+ 	\centering
+ 	\includegraphics[width=0.85\textwidth]{hysteresis_loop.png}
+ 	\caption{Pitching moment against angle of attack for a prescribed
+ 		sinusoidal oscillation about $30^{\circ}$ with an amplitude of
+ 		$8^{\circ}$. The static table traces a single curve; the unsteady model
+ 		traces a loop whose width depends on the rate of the motion.}
+ 	\label{fig:hyst}
+ \end{figure}
+ 
+ Figure~\ref{fig:hyst} shows the response of the model to a prescribed
+ sinusoidal variation in angle of attack. The static table produces a single
+ curve, traced identically in both directions. The unsteady model produces a
+ closed loop: at $\alpha = 30^{\circ}$ and an oscillation frequency of
+ $0.5\,\mathrm{Hz}$, the pitching moment coefficient is approximately $-0.002$
+ while the angle of attack is increasing and $-0.055$ while it is decreasing.
+ The instantaneous angle of attack is identical in the two cases and the
+ aerodynamic moment differs by an order of magnitude.
+ 
+ This is the behaviour that no static lookup table can represent, and it is the
+ quantitative justification for the argument advanced in Section~3.
+ 
+ \subsection{Sensitivity to the Model Parameters}
+ 
+ % ---------------------------------------------------------------------
+ % FIGURE: run run_goman_khrabrov.m, tab "Parameter sweep".
+ % ---------------------------------------------------------------------
+ \begin{figure}[htbp]
+ 	\centering
+ 	\includegraphics[width=0.85\textwidth]{parameter_swept.png}
+ 	\caption{Width of the pitching moment hysteresis loop against oscillation
+ 		frequency, for four values of the relaxation time constant $\tau_{1}$.}
+ 	\label{fig:gksweep}
+ \end{figure}
+ 
+ The time constants $\tau_{1}$ and $\tau_{2}$ are determined from
+ forced-oscillation testing and are not available in the static dataset. Rather
+ than adopting values from another aircraft, both are treated as parameters and
+ varied. Figure~\ref{fig:gksweep} shows the resulting loop width as a function
+ of oscillation frequency.
+ 
+ The loop width exhibits a maximum at an intermediate frequency for every value
+ of $\tau_{1}$ examined. The interpretation is physical: at low frequency the
+ separation point follows its steady value closely and there is negligible lag;
+ at high frequency it cannot respond at all and remains effectively frozen;
+ maximum hysteresis occurs at intermediate frequencies where the flow is
+ responding but failing to keep pace. Since this behaviour is present across
+ the plausible parameter range, the qualitative conclusion does not depend on
+ the particular values chosen, although the magnitude of the effect does.
+ 
+ 
+ \section{Limitations}
+ \label{sec:limitations}
+ 
+ \subsection{Completeness of the Aerodynamic Model}
+ 
+ Two components of the original NASA formulation are absent from the digitised
+ dataset and are therefore not represented. The stabilator effectiveness factor
+ $\eta(\delta_{h})$, which reduces the tabulated pitching moment increment at
+ large deflections, is taken as unity throughout. Since the deep-stall results
+ of Section~\ref{sec:static} depend on the pitching moment available at full
+ nose-down deflection, this is the omission most likely to affect them, and it
+ would act in the direction of overstating the available nose-down authority.
+ The speedbrake contribution is likewise absent, but is not required for any of
+ the analyses presented.
+ 
+ The leading-edge flap is held retracted rather than following its scheduled
+ deflection. This is a deliberate choice rather than an omission: holding the
+ flap fixed isolates the behaviour of the airframe from that of its control
+ system, which is appropriate for a study of bare-airframe stability. It does
+ mean, however, that the results describe the aircraft with its high-lift
+ devices inoperative, which is not the configuration in which it is normally
+ flown.
+ 
+ The engine thrust tables were transcribed from the reference rather than
+ verified against a primary document. Trim throttle setting depends on them
+ directly. The trim angle of attack, trim stabilator deflection, static
+ stability, eigenvalues and bifurcation results are essentially insensitive to
+ thrust, so the principal findings of this work do not rest on these values.
+ 
+ \subsection{Resolution of the Tabulated Data}
+ 
+ The angle-of-attack grid is spaced at $5^{\circ}$ intervals to $60^{\circ}$
+ and then contains only three further points, at $70^{\circ}$, $80^{\circ}$ and
+ $90^{\circ}$. All behaviour reported above $60^{\circ}$ therefore rests on a
+ very sparse sampling of the underlying wind tunnel data, and any structure
+ appearing between those points is a property of the interpolation rather than
+ of the measurements.
+ 
+ This bears directly on the deep-stall result. The present model places the
+ stable high-incidence equilibrium above $70^{\circ}$ angle of attack, whereas
+ the deep stall of the F-16 is generally reported in the range $55^{\circ}$ to
+ $60^{\circ}$. Three factors plausibly contribute: the sparse grid in precisely
+ this region, the omission of $\eta(\delta_{h})$ noted above, and the retracted
+ leading-edge flap. The qualitative result, that a statically stable
+ equilibrium exists at high incidence under full nose-down control at the
+ reference centre of gravity, is robust to all three. The particular angle at
+ which it occurs is not, and should not be quoted as a prediction.
+ 
+ A comparable caution applies to features of the eigenvalue results that appear
+ between widely spaced nodes. The local maximum in growth rate near
+ $\alpha = 12.5^{\circ}$, for example, lies between table points at
+ $10^{\circ}$ and $15^{\circ}$; the existence of a transition across that
+ interval is supported by the data, but its shape and peak magnitude are not.
+ 
+ \subsection{Interpolation}
+ 
+ Linear interpolation reproduces the tabulated values and matches the source
+ model, but yields a slope that is discontinuous at every node. This has two
+ consequences that were encountered directly in this work.
+ 
+ First, eigenvalues computed from a linearly interpolated model jump at table
+ nodes for no physical reason, as described in Section~4.3. The refinement of
+ the angle-of-attack axis adopted for the dynamic analysis addresses this, but
+ it introduces a smoothing assumption that the original dataset does not
+ support: between nodes, the refined model asserts a curvature that was never
+ measured.
+ 
+ Second, the same discontinuity limits the continuation analysis. A Newton
+ corrector requires a continuous Jacobian, and the branch tracking implemented
+ here stalls when it reaches a table node, covering approximately $15^{\circ}$
+ of angle of attack before terminating. Kolb \cite{kolb2017} does not encounter
+ this difficulty because the F-18 model used in that work is analytic. The
+ established remedy is to fit the tabulated data to smooth global functions
+ before applying continuation methods, which is one of the motivations for the
+ global nonlinear modelling approaches discussed in Section~3
+ \cite{ismail2023}. That fitting was not carried out here, and the full
+ continuation of Section~6 was consequently limited to a parameter sweep with
+ independent solution at each step, seeded from the previous point. This
+ suffices for the equilibrium families examined, whose branches are
+ well separated, but it cannot follow a branch around a fold.
+ 
+ \subsection{Scope of the Dynamic Analysis}
+ 
+ The equilibria examined in Section~\ref{sec:dynamic} have zero sideslip, zero
+ bank angle and zero angular rates. Spin is an equilibrium with non-zero roll
+ and yaw rates and is therefore outside the set of solutions considered here.
+ The departure boundary identified at $\alpha \approx 34^{\circ}$ indicates the
+ condition at which the aircraft ceases to hold wings-level flight; it does not
+ describe the motion that follows, nor whether that motion terminates in a
+ developed spin.
+ 
+ The analysis is also restricted to the identification of bifurcation points
+ rather than their classification. The Hopf bifurcation of the dutch roll mode
+ reported in Section~\ref{sec:dynamic} is located by the crossing of a complex
+ conjugate pair, but no first Lyapunov coefficient was computed, so it is not
+ established whether the resulting limit cycle appears on the stable or the
+ unstable side of the bifurcation. That distinction determines whether the
+ oscillation grows to a bounded amplitude from which recovery is possible, and
+ it would require dedicated continuation software of the kind used in
+ \cite{kolb2017}.
+ 
+ No time-domain simulation was performed. The stability results presented are
+ therefore predictions of the linearised dynamics about equilibrium, and have
+ not been confirmed by integrating the nonlinear equations from a perturbed
+ initial condition.
+ 
+ \subsection{The Unsteady Model}
+ 
+ The time constants $\tau_{1}$ and $\tau_{2}$ of the state-space formulation
+ are properties of the flow and are obtained from forced-oscillation wind
+ tunnel testing, which the static dataset does not include. The sensitivity
+ study of Section~\ref{sec:unsteady} establishes that hysteresis is present
+ across the plausible range of these parameters and that its dependence on
+ frequency has a consistent form, but the magnitude of the effect for the F-16
+ specifically cannot be determined from the available data.
+ 
+ The implementation also adopts a simplified reconstruction, in which the
+ coefficient is recovered by evaluating the static tables at the angle of
+ attack corresponding to the current separation state, rather than through the
+ Kirchhoff expression used in the original formulation \cite{goman1994}. Both
+ reduce exactly to the static model in steady flight, and both produce
+ hysteresis under unsteady conditions, but they are not identical.
+ 
+ Finally, the unsteady model is exercised in isolation, driven by a prescribed
+ variation in angle of attack. It is not coupled to the equations of motion, so
+ the effect of unsteady aerodynamics on the stability boundaries reported in
+ Section~\ref{sec:dynamic} has not been assessed. Since those boundaries lie at
+ angles of attack where the flow is separated, this coupling is the most
+ significant extension the present work would admit.
+ 
+ 
+ \section{Conclusions}
+ 
+ This project set out to determine how nonlinear aerodynamic effects at high
+ angles of attack influence the stability and manoeuvrability of a
+ high-performance fighter aircraft, using the F-16 as a case study. A complete
+ nonlinear aerodynamic model was assembled from the NASA Technical Paper 1538
+ dataset, embedded in a six-degree-of-freedom simulation, and analysed by
+ equilibrium, bifurcation and eigenvalue methods.
+ 
+ \subsection{Principal Findings}
+ 
+ The static aerodynamic coefficients are nonlinear in a way that changes the
+ structure of the problem rather than merely its numerical values. The
+ lift curve departs from its linear extrapolation beyond approximately
+ $10^{\circ}$ and reaches a maximum near $35^{\circ}$, well past the stall of
+ the outer wing panels, reproducing the behaviour attributed in the source
+ literature to the wing-body strake vortex. The pitching moment slope changes
+ sign more than once across the angle-of-attack range, so the number of
+ equilibrium states is not fixed: depending on stabilator deflection and centre
+ of gravity there may be none, one, or several.
+ 
+ This variability has a direct consequence for controllability. At the
+ reference centre of gravity the aircraft possesses a statically stable
+ equilibrium at high angle of attack with the stabilator at its full nose-down
+ limit, a state from which the stabilator alone cannot recover it. Continuation
+ in centre-of-gravity position shows that this deep-stall state is created at
+ $x_{cg} = 0.3071\bar{c}$ through a saddle-node bifurcation, appearing together
+ with an unstable equilibrium that forms the boundary of its basin of
+ attraction. The state does not exist forward of that position. Moving further
+ aft does not deepen it but lowers the boundary, from approximately
+ $69^{\circ}$ at $0.31\bar{c}$ to approximately $42^{\circ}$ at
+ $0.375\bar{c}$, progressively reducing the disturbance required to enter it.
+ 
+ Eigenvalue analysis along a descending equilibrium family identifies three
+ distinct regimes of dynamic stability. Below approximately $15^{\circ}$ the
+ bare airframe is divergent in pitch, which is the relaxed longitudinal static
+ stability for which the aircraft was designed. Between approximately
+ $15^{\circ}$ and $31^{\circ}$ it is stable without augmentation. Above
+ approximately $32^{\circ}$ it is unstable again, but in a different axis and
+ by a different mechanism: the dutch roll mode crosses into negative damping in
+ a Hopf bifurcation, corresponding physically to wing rock, and is followed
+ near $34^{\circ}$ by a directional divergence in sideslip and yaw rate
+ corresponding to nose slice departure.
+ 
+ The departure boundary is supported by two independent calculations. The
+ classical criterion $C_{n\beta,\mathrm{dyn}}$, evaluated from two static
+ derivatives and an inertia ratio with no dynamics involved, changes sign at
+ $\alpha = 34.0^{\circ}$. The eigenvalue analysis of the linearised eight-state
+ model places the divergence at $\alpha = 33.9^{\circ}$. Their agreement
+ provides mutual validation of the implementation and of the criterion.
+ 
+ Finally, implementation of the Goman--Khrabrov state-space formulation
+ confirms that the static representation underlying all of the above becomes
+ quantitatively inadequate once the angle of attack is changing. Under a
+ prescribed oscillation about $30^{\circ}$ at $0.5\,\mathrm{Hz}$, the pitching
+ moment coefficient differs by roughly an order of magnitude between the
+ increasing and decreasing branches at the same instantaneous angle of attack.
+ 
+ \subsection{Implications for High-Manoeuvrability Design}
+ 
+ Taken together, these results describe an aircraft whose useful envelope is
+ bounded not by a single limit but by several distinct mechanisms, each
+ arising from a different feature of the nonlinear aerodynamics. The pitch
+ divergence at low incidence is a designed characteristic, traded against
+ manoeuvrability and rendered acceptable by a full-authority flight control
+ system. The wing rock and directional divergence at high incidence are not
+ designed but tolerated, and they define the practical upper boundary of the
+ envelope. The deep stall is neither, and represents a region of the state
+ space that must be avoided rather than managed.
+ 
+ The design responses adopted in subsequent aircraft follow directly from this
+ structure. Relaxed static stability, which appears here as the positive real
+ eigenvalue below $15^{\circ}$, has become standard practice rather than an
+ exception, because the manoeuvrability it purchases is available whenever the
+ control system is. Thrust vectoring addresses a different limitation, namely
+ that the deep stall and the departure boundary both arise where aerodynamic
+ control surfaces lose effectiveness; a control moment that does not depend on
+ dynamic pressure or on attached flow removes the mechanism by which those
+ states become inescapable. The F-16 itself illustrates the alternative
+ approach of accepting the aerodynamic limitation and mitigating it
+ operationally, through centre-of-gravity management and a manual pitch
+ override provision for deep-stall recovery.
+ 
+ \subsection{Recommendations for Further Work}
+ 
+ Three extensions follow naturally from the limitations identified in
+ Section~\ref{sec:limitations}. Fitting the tabulated aerodynamic data to
+ smooth global functions would remove the interpolation discontinuity that
+ limits the continuation analysis, and would permit the equilibrium branches to
+ be followed around folds using established continuation software. Extending
+ the equilibrium search to include non-zero angular rates would allow steady
+ spin states to be located, which the present formulation excludes by
+ construction. Coupling the unsteady state-space model to the equations of
+ motion, rather than exercising it in isolation, would establish whether the
+ stability boundaries reported here are displaced once the finite response time
+ of the separated flow is accounted for. The last of these is the most
+ significant, since both high-incidence instabilities occur in precisely the
+ regime where the static assumption is least justified.
  
  
 	
