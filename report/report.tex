@@ -288,8 +288,8 @@ hyphenation=true    % Hyphenation turn on/off
  depend on that slope rather than on the coefficient value. Crossing the node
  at $\alpha = 10^{\circ}$ changes $\partial C_{m}/\partial\alpha$ by a factor
  of two and causes the computed growth rate to jump from $0.33$ to
- $1.12\,\mathrm{s^{-1}}$, with no corresponding change in the physics. For the
- eigenvalue and continuation analyses of Section~\ref{sec:dynamic}, the
+ $1.12\,\mathrm{s^{-1}}$, with no corresponding change in the physics. for the eigenvalue
+ analysis of Section 6 and the fold verification of Section 5.4, the
  angle-of-attack axis is therefore first refined to $0.25^{\circ}$ using
  monotone piecewise cubic interpolation, after which linear interpolation is
  applied on the refined grid. Coefficient values are essentially unchanged and
@@ -359,6 +359,7 @@ hyphenation=true    % Hyphenation turn on/off
  \section{Static Aerodynamic Characteristics and Equilibria}
  \label{sec:static}
  
+ 
  \subsection{Lift and Drag}
  
  The dataset provides body-axis force coefficients only. Lift and drag are
@@ -371,42 +372,32 @@ hyphenation=true    % Hyphenation turn on/off
  	\label{eq:windaxes}
  \end{equation}
  The transformation was verified against the converged trim solution of
- \ref{Section:4.6}, which is computed entirely in body axes and never uses
- $C_{L}$ or $C_{D}$. At that condition the lift obtained from
+ Section~\ref{sec:verification}, which is computed entirely in body axes and
+ never uses $C_{L}$ or $C_{D}$. At that condition the lift obtained from
  Equation~\eqref{eq:windaxes}, together with the vertical component of thrust,
  balances the aircraft weight to $91\,157.1\,\mathrm{N}$ on both sides, and the
  drag balances the horizontal component of thrust to $8604.9\,\mathrm{N}$ on
  both sides. The agreement is exact to the precision of the solver.
  
+
+ Figure~5.1 shows the result. The lift curve follows its low-incidence linear
+ extrapolation, of slope $0.067$ per degree fitted between $0^{\circ}$ and
+ $10^{\circ}$, closely up to approximately $10^{\circ}$, and departs from it
+ progressively thereafter. The maximum lift coefficient of $1.72$ occurs at
+ $\alpha = 36^{\circ}$, well beyond the angle at which the outer wing panels
+ stall. This is consistent with the wind tunnel flow-visualisation results
+ discussed in Section~2, in which the outer panels were observed to stall near
+ $\alpha = 20^{\circ}$ while the wing-body strake continued to generate lift to
+ a maximum near $35^{\circ}$ \cite{nguyen1979}. The present model, assembled
+ independently from the tabulated data, agrees with that reported angle to
+ within one degree.
  
- 
- \begin{figure}[htbp]
- 	\centering
- 	\includegraphics[width=0.85\textwidth]{lift_and_drag.png}
- 	\caption{Wind-axis coefficients derived from the body-axis dataset. Upper
- 		panel: lift coefficient, with the linear extrapolation of the
- 		$0^{\circ}$ to $10^{\circ}$ slope shown dashed. Centre panel: drag
- 		coefficient. Lower panel: lift-to-drag ratio.}
- 	\label{fig:liftdrag}
- \end{figure}
- 
- Figure~\ref{fig:liftdrag} shows the result. The lift curve follows its
- low-incidence linear extrapolation closely up to approximately $10^{\circ}$
- and departs from it progressively thereafter. The maximum lift coefficient of
- $1.72$ occurs at $\alpha = 35^{\circ}$, well beyond the angle at which the
- outer wing panels stall. This is consistent with the wind tunnel
- flow-visualisation results discussed in Section~2, in which the outer panels
- were observed to stall near $\alpha = 20^{\circ}$ while the wing-body strake
- continued to generate lift to a maximum near $35^{\circ}$ \cite{nguyen1979}.
- The agreement is a useful check: the figure quoted in the literature is
- reproduced by the present model, which was assembled independently from the
- tabulated data.
- 
- The drag coefficient rises monotonically across the whole range and does not
- follow the classical parabolic polar $C_{D} = C_{D_{0}} + kC_{L}^{2}$. Beyond
- $35^{\circ}$ the lift coefficient falls while the drag continues to increase,
+ The drag coefficient falls to a minimum near zero incidence and rises
+ monotonically thereafter across the remainder of the range. It does not follow
+ the classical parabolic polar $C_{D} = C_{D_{0}} + kC_{L}^{2}$: beyond
+ $36^{\circ}$ the lift coefficient falls while the drag continues to increase,
  a combination the parabolic form cannot represent at all. The lift-to-drag
- ratio reaches a maximum of approximately $10.5$ near $\alpha = 5^{\circ}$ and
+ ratio reaches a maximum of approximately $11.6$ near $\alpha = 3^{\circ}$ and
  falls to approximately unity by $45^{\circ}$.
  
  It is worth noting that the contribution of thrust to the vertical force
@@ -417,10 +408,7 @@ hyphenation=true    % Hyphenation turn on/off
  
  \subsection{Pitching Moment and Control Effectiveness}
  
- % ---------------------------------------------------------------------
- % FIGURE: run plot_coefficients.m, tab "C_m".
- % Export the whole tab (three panels).
- % ---------------------------------------------------------------------
+ 
  \begin{figure}[htbp]
  	\centering
  	\includegraphics[width=0.85\textwidth]{Cm_plots.png}
@@ -485,9 +473,7 @@ Second, a statically stable equilibrium exists at high angle of attack with the 
  
  \subsection{Continuation in Centre-of-Gravity Position}
  
- % ---------------------------------------------------------------------
- % FIGURE: run run_cg_bifurcation.m. Single figure window.
- % ---------------------------------------------------------------------
+ 
  \begin{figure}[htbp]
  	\centering
  	\includegraphics[width=0.85\textwidth]{Cg_bifurcation.png}
@@ -506,9 +492,74 @@ Second, a statically stable equilibrium exists at high angle of attack with the 
  gravity moves further aft. The critical position, located by bisection, is
  $x_{cg} = 0.3071\bar{c}$.
  
- The simultaneous creation of a stable and an unstable equilibrium as a
- parameter crosses a threshold is a saddle-node, or fold, bifurcation. Its
- significance here is qualitative: the deep-stall state does not become
+ 
+ The appearance of two equilibria as a parameter crosses a threshold is
+ consistent with a saddle-node bifurcation, but does not by itself establish
+ one. A discontinuity in the interpolated model could produce the same
+ appearance without any smooth fold being present, and this concern is not
+ hypothetical here: with linear interpolation on the raw grid the two
+ equilibria merge at $\alpha = 70^{\circ}$, which is itself a table node. Two
+ further conditions were therefore tested, both using the smoothed model
+ described in Section~4.3.
+ 
+ The first is tangency. At a saddle-node the two equilibria merge with a common
+ tangent, so both $C_{m} = 0$ and $\partial C_{m}/\partial\alpha = 0$ hold at
+ the critical point, and the slopes at the two roots must fall towards zero as
+ the parameter approaches its critical value. The second is scaling. The normal
+ form of a saddle-node gives a separation between the two roots proportional to
+ the square root of the distance from the critical parameter value, an exponent
+ no interpolation artefact reproduces. Table~\ref{tab:fold} reports both.
+ 
+ \begin{table}[htbp]
+ 	\centering
+ 	\caption{Behaviour of the two high-incidence equilibria as the critical
+ 		centre-of-gravity position is approached from above, at
+ 		$\delta_{h} = +25^{\circ}$.}
+ 	\label{tab:fold}
+ 	\begin{tabular}{cccc}
+ 		\hline
+ 		$x_{cg} - x_{cg,\mathrm{crit}}$ & separation (deg)
+ 		& \multicolumn{2}{c}{$\left|\partial C_{m}/\partial\alpha\right|$} \\
+ 		& & lower root & upper root \\
+ 		\hline
+ 		$3\times10^{-2}$ & 14.070 & $6.74\times10^{-3}$ & $2.32\times10^{-2}$ \\
+ 		$1\times10^{-2}$ &  6.894 & $8.85\times10^{-3}$ & $1.68\times10^{-2}$ \\
+ 		$3\times10^{-3}$ &  3.537 & $5.63\times10^{-3}$ & $9.96\times10^{-3}$ \\
+ 		$1\times10^{-3}$ &  1.960 & $3.41\times10^{-3}$ & $6.55\times10^{-3}$ \\
+ 		$3\times10^{-4}$ &  1.016 & $2.12\times10^{-3}$ & $2.76\times10^{-3}$ \\
+ 		$1\times10^{-4}$ &  0.559 & $1.43\times10^{-3}$ & $2.76\times10^{-3}$ \\
+ 		\hline
+ 	\end{tabular}
+ \end{table}
+ 
+ Both slopes decrease towards zero as the critical position is approached, by
+ factors of approximately five and eight respectively over the range examined,
+ which is consistent with the required tangency. The separation follows a
+ power law in the distance from the critical position with a fitted exponent of
+ $0.56$, against the theoretical value of $0.5$; the agreement is shown in
+ Figure~\ref{fig:foldscaling}. The small excess over $0.5$ is attributable to
+ the finite range of the fit and to the outermost points lying too far from the
+ critical value for the normal form to apply. It is far removed from the
+ exponent of unity that a piecewise-linear corner would produce.
+ 
+ \begin{figure}[htbp]
+ 	\centering
+ 	\includegraphics[width=0.6\textwidth]{root_seperation}
+ 	\caption{Separation between the two high-incidence equilibria against
+ 		distance from the critical centre-of-gravity position, with a square root
+ 		reference shown dashed.}
+ 	\label{fig:foldscaling}
+ \end{figure}
+ 
+ The critical position is $0.3071\bar{c}$ under both the linear and the
+ smoothed interpolation schemes. That the two schemes agree, while only the
+ smoothed one permits the tangency to be resolved, indicates that the
+ transition is a property of the aerodynamic data rather than of the numerical
+ representation.
+ 
+ 
+ The transition is therefore a saddle-node, or fold, bifurcation. Its
+ significance here is qualitative: the deep-stall-like state does not become
  gradually more probable as the centre of gravity moves aft. It does not exist
  below the threshold and it exists above it.
  
@@ -628,11 +679,9 @@ Second, a statically stable equilibrium exists at high angle of attack with the 
  period only becomes oscillatory above $15^{\circ}$, which is consistent with
  its appearance in Figure~\ref{fig:damping} at the same angle.
  
- \subsection{Independent Confirmation of the Departure Boundary}
+ \subsection{Consistency with the Classical Departure Criterion}
  
- % ---------------------------------------------------------------------
- % FIGURE: run plot_coefficients.m, tab "Departure".
- % ---------------------------------------------------------------------
+ 
  \begin{figure}[htbp]
  	\centering
  	\includegraphics[width=0.85\textwidth]{departure.png}
@@ -664,7 +713,35 @@ Second, a statically stable equilibrium exists at high angle of attack with the 
  It should be noted that $C_{n\beta,\mathrm{dyn}}$ is negative only over a
  bounded interval, approximately $34^{\circ}$ to $39^{\circ}$, rather than
  remaining negative at all higher angles.
- 
+  
+  The eigenvalue analysis of Section~6.4 places the directional divergence at
+  $\alpha = 33.9^{\circ}$, and the two results therefore differ by
+  $0.1^{\circ}$. This agreement should be interpreted carefully. The two
+  calculations are computationally distinct: the first evaluates a closed-form
+  expression in two static derivatives and an inertia ratio, while the second
+  extracts an eigenvalue from the numerically linearised eight-state model at a
+  trimmed equilibrium. They are not, however, independent. Both draw on the same
+  aerodynamic database and the same mass properties, and
+  $C_{n\beta,\mathrm{dyn}}$ is itself a reduced-order approximation to the
+  directional root whose sign change the eigenvalue analysis detects, obtained
+  by retaining only the static sideslip derivatives and neglecting the damping
+  terms and the coupling to the longitudinal states.
+  
+  What the comparison establishes is therefore internal consistency rather than
+  external validation. The agreement to $0.1^{\circ}$ confirms that the
+  lateral-directional part of the linearisation has been implemented correctly,
+  in the sense that the full model reproduces the behaviour of the standard
+  reduced-order criterion in the regime where that criterion is expected to
+  apply. It does not constitute independent confirmation that the physical
+  departure boundary of the aircraft lies at $34^{\circ}$; both results would be
+  displaced together by any error in the underlying aerodynamic data or in the
+  assumed inertias.
+  
+  It should be noted that $C_{n\beta,\mathrm{dyn}}$ is negative only over a
+  bounded interval, approximately $34^{\circ}$ to $39^{\circ}$, rather than
+  remaining negative at all higher angles. The criterion therefore identifies a
+  departure-susceptible band rather than an upper limit on angle of attack.
+  
  
  \section{Unsteady Aerodynamic Modelling}
  \label{sec:unsteady}
@@ -805,32 +882,50 @@ Second, a statically stable equilibrium exists at high angle of attack with the 
  $10^{\circ}$ and $15^{\circ}$; the existence of a transition across that
  interval is supported by the data, but its shape and peak magnitude are not.
  
- \subsection{Interpolation}
+ 
+ \subsection{Interpolation and the Absence of Continuation}
  
  Linear interpolation reproduces the tabulated values and matches the source
  model, but yields a slope that is discontinuous at every node. This has two
- consequences that were encountered directly in this work.
+ consequences for the present work.
  
- First, eigenvalues computed from a linearly interpolated model jump at table
- nodes for no physical reason, as described in Section~4.3. The refinement of
- the angle-of-attack axis adopted for the dynamic analysis addresses this, but
- it introduces a smoothing assumption that the original dataset does not
- support: between nodes, the refined model asserts a curvature that was never
- measured.
+ The first concerns the eigenvalue results. Eigenvalues computed from a
+ linearly interpolated model jump at table nodes for no physical reason, as
+ described in Section~4.3. Refining the angle-of-attack axis before
+ interpolating removes this behaviour, but it introduces an assumption that the
+ original dataset does not support: between nodes, the refined model asserts a
+ curvature that was never measured. All eigenvalues reported in Section~6, and
+ the tangency test of Section~5.4, are therefore properties of the smoothed
+ numerical representation rather than of the measured data directly. This
+ matters particularly for the transitions identified near $\alpha = 15^{\circ}$,
+ $32^{\circ}$ and $34^{\circ}$, none of which coincides with a table point, and
+ all of which are consequently located using interpolated slopes.
  
- Second, the same discontinuity limits the continuation analysis. A Newton
- corrector requires a continuous Jacobian, and the branch tracking implemented
- here stalls when it reaches a table node, covering approximately $15^{\circ}$
- of angle of attack before terminating. Kolb \cite{kolb2017} does not encounter
- this difficulty because the F-18 model used in that work is analytic. The
- established remedy is to fit the tabulated data to smooth global functions
- before applying continuation methods, which is one of the motivations for the
- global nonlinear modelling approaches discussed in Section~3
- \cite{ismail2023}. That fitting was not carried out here, and the full
- continuation of Section~6 was consequently limited to a parameter sweep with
- independent solution at each step, seeded from the previous point. This
- suffices for the equilibrium families examined, whose branches are
- well separated, but it cannot follow a branch around a fold.
+ The second concerns the method used to trace equilibrium branches. The results
+ of Sections~5.3, 5.4 and~6 are obtained by parameter sweeps: the varied
+ parameter is stepped, the equilibrium condition is solved independently at
+ each step, and in Section~6 each solution is used to seed the next. This is
+ adequate for the equilibrium families examined, whose branches are widely
+ separated and single-valued in the swept parameter over the ranges considered.
+ It is not equivalent to a continuation method, and it has a specific
+ limitation: because the parameter is prescribed at each step, the procedure
+ cannot follow a branch that turns back on itself, and would fail to trace an
+ equilibrium curve through a fold rather than merely detect one.
+ 
+ Pseudo-arclength continuation, which treats the parameter as a further unknown
+ and steps along the solution curve by arclength, is the standard remedy and is
+ the method used by Kolb~\cite{kolb2017}. It was not applied here. Exploratory
+ calculations indicated that the Newton corrector on which such methods depend
+ converges poorly against the present model, because the corrector requires a
+ continuous Jacobian and the tabulated aerodynamic model does not provide one.
+ Kolb does not encounter this difficulty because the F-18 model used in that
+ work is given in analytic form. The established approach for tabulated data is
+ to fit the tables to smooth global functions before applying continuation,
+ which is one of the motivations for the global nonlinear modelling techniques
+ discussed in Section~3~\cite{ismail2023}. That fitting was not carried out in
+ the present work, and its absence is the principal reason the bifurcation
+ analysis here is restricted to detecting and characterising transitions rather
+ than to tracing complete solution branches.
  
  \subsection{Scope of the Dynamic Analysis}
  
@@ -896,7 +991,7 @@ Second, a statically stable equilibrium exists at high angle of attack with the 
  The static aerodynamic coefficients are nonlinear in a way that changes the
  structure of the problem rather than merely its numerical values. The
  lift curve departs from its linear extrapolation beyond approximately
- $10^{\circ}$ and reaches a maximum near $35^{\circ}$, well past the stall of
+ $10^{\circ}$ and reaches a maximum near $36^{\circ}$, well past the stall of
  the outer wing panels, reproducing the behaviour attributed in the source
  literature to the wing-body strake vortex. The pitching moment slope changes
  sign more than once across the angle-of-attack range, so the number of
@@ -926,12 +1021,15 @@ Second, a statically stable equilibrium exists at high angle of attack with the 
  near $34^{\circ}$ by a directional divergence in sideslip and yaw rate
  corresponding to nose slice departure.
  
- The departure boundary is supported by two independent calculations. The
- classical criterion $C_{n\beta,\mathrm{dyn}}$, evaluated from two static
- derivatives and an inertia ratio with no dynamics involved, changes sign at
- $\alpha = 34.0^{\circ}$. The eigenvalue analysis of the linearised eight-state
- model places the divergence at $\alpha = 33.9^{\circ}$. Their agreement
- provides mutual validation of the implementation and of the criterion.
+ The departure boundary is identified consistently by two computationally
+ distinct evaluations of the same model. The classical criterion
+ $C_nbeta$,$dyn$, a closed-form expression in two static derivatives and an
+ inertia ratio, changes sign at alpha = 34.0 degrees; the eigenvalue
+ analysis of the linearised eight-state model places the divergence at
+ alpha = 33.9 degrees. Since the criterion is a reduced-order
+ approximation to the same eigenvalue, this agreement confirms the
+ internal consistency of the implementation rather than validating the
+ result against independent evidence.
  
  Finally, implementation of the Goman--Khrabrov state-space formulation
  confirms that the static representation underlying all of the above becomes
@@ -969,8 +1067,7 @@ Second, a statically stable equilibrium exists at high angle of attack with the 
  
  Three extensions follow naturally from the limitations identified in
  Section~\ref{sec:limitations}. Fitting the tabulated aerodynamic data to
- smooth global functions would remove the interpolation discontinuity that
- limits the continuation analysis, and would permit the equilibrium branches to
+ smooth global functions would remove the interpolation discontinuity that prevented continuation methods from being applied, and would permit the equilibrium branches to
  be followed around folds using established continuation software. Extending
  the equilibrium search to include non-zero angular rates would allow steady
  spin states to be located, which the present formulation excludes by

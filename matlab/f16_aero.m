@@ -67,7 +67,7 @@ function [CX,CY,CZ,Cl,Cm,Cn] = f16_aero(alpha,beta,dh,da,dr,dlef,p,q,r,V,xcg,smo
 %   you edit F16aerodata.m, otherwise the cached tables stay stale.
 
 persistent Graw Gsm
-if nargin < 12 || isempty(smooth), smooth = false; end
+if nargin < 12 || isempty(smooth), smooth = true; end
 
 if smooth
     if isempty(Gsm),  Gsm  = build_interpolants(0.25); end
