@@ -919,6 +919,153 @@ no interpolation artefact reproduces. Table~5.1 reports both.
  illustrative rather than established.
  
  
+ \section{Spin and Post-Departure Behaviour}
+ \label{sec:spin}
+ 
+ The analysis of Section~6 locates the angle of attack at which the aircraft
+ ceases to hold wings-level flight, but says nothing about the motion that
+ follows. That motion is the subject of a substantial literature, and the
+ purpose of this section is to place the present results within it. Nothing
+ reported here is computed in this work; the section is included because the
+ departure boundary identified above is the entry condition to the phenomena
+ described, and because those phenomena determine whether a departure is
+ recoverable.
+ 
+ \subsection{Spin as an Equilibrium}
+ 
+ A developed spin is a steady state. The aircraft descends at approximately
+ constant airspeed while rotating about a vertical axis at approximately
+ constant rate, with the aerodynamic and inertial moments in balance. In the
+ formulation used in this work it is therefore an equilibrium of the same
+ eight-state system, but one with non-zero roll and yaw rates.
+ 
+ That is precisely why it lies outside the results presented. Every
+ equilibrium computed in Sections~5 and~6 has $\beta = 0$, $\phi = 0$ and
+ $p = q = r = 0$, which excludes rotating states by construction. Locating spin
+ equilibria requires searching a higher-dimensional solution set, and Goman,
+ Khramtsovsky and Patel~\cite{goman2003} describe the standard approach: an
+ initial estimate from the balance of moments alone, identifying the possible
+ equilibrium spin modes for a given control deflection, followed by accurate
+ calculation of the spin parameters and their local stability using the full
+ eighth-order equations of motion.
+ 
+ The bifurcation diagrams produced by that method have the same form as
+ Figure~5.3 of the present work, with equilibrium angle of attack plotted
+ against stabilator deflection, but they contain additional branches that a
+ non-rotating formulation cannot reach. In~\cite{goman2003} these include
+ oscillatory flat spin modes above $60^{\circ}$, roll-coupled modes, and a
+ wing-rock branch near $40^{\circ}$, alongside the normal flight branch. The
+ dutch roll instability identified in Section~6.3 and the deep-stall-like
+ equilibrium of Section~5.3 are therefore two features of a solution structure
+ that is considerably richer than the one computed here.
+ 
+ \subsection{The Role of Aerodynamic Asymmetry}
+ 
+ Section~2 described the asymmetric breakdown of the leading-edge vortices as
+ one of the principal drivers of departure and spin susceptibility. The
+ aerodynamic model used in this work does not resolve that mechanism: the
+ tabulated coefficients are symmetric, so that $C_{Y}$, $C_{l}$ and $C_{n}$
+ vanish at zero sideslip with neutral lateral controls.
+ 
+ The original wind tunnel programme did measure the asymmetries. Nguyen et
+ al.~\cite{nguyen1979} report that they are small enough to be neglected within
+ the normal angle-of-attack envelope but increase rapidly above
+ $\alpha = 30^{\circ}$, and that the yawing-moment asymmetry reaches its maximum
+ in the angle-of-attack region of the deep-stall trim point. The deep-stall
+ investigation in that study was consequently conducted twice, with and without
+ the measured asymmetries, and the asymmetric case produced sustained yaw rates
+ that the symmetric case did not.
+ 
+ Goman et al.~\cite{goman2003} treat the asymmetry as a modelling problem in
+ its own right, representing the asymmetric rolling and yawing moments by
+ differential equations that account for their angle-of-attack dependence and
+ for the time lag associated with the internal vortical flow dynamics. This is
+ the same class of formulation as the state-space model implemented in
+ Section~7, applied to a different aerodynamic effect. Their analysis
+ establishes a critical level of asymmetry above which equilibrium spin modes
+ appear, which makes the asymmetry magnitude a bifurcation parameter in the
+ same sense that centre-of-gravity position is in Section~5.4.
+ 
+ \subsection{Deep Stall and Flat Spin as the Same Failure}
+ 
+ The most directly relevant result in this literature concerns the relationship
+ between the deep-stall equilibrium found in Section~5.3 and the flat spin.
+ Goman et al.~\cite{goman2003} identify unrecoverable flat spin modes, sustained
+ by an asymmetric yawing moment, as identical in character to deep-stall
+ regimes at high angle of attack: in both cases the state persists because the
+ available nose-down pitch control is insufficient to eliminate the
+ high-incidence trim, and in both cases the conventional control surfaces have
+ lost the authority to do so.
+ 
+ This reframes the result of Section~5.4. The saddle-node bifurcation located
+ there creates a stable high-incidence equilibrium in a non-rotating
+ formulation. The same loss of nose-down control margin, in the presence of
+ aerodynamic asymmetry, produces a rotating equilibrium of the same essential
+ character. The centre-of-gravity threshold is therefore not specific to the
+ deep stall; it marks the point at which the airframe loses the pitch authority
+ on which recovery from an entire family of high-incidence states depends.
+ 
+ \subsection{Recovery}
+ 
+ Because the primary controls are ineffective in these states, recovery
+ requires either an additional source of nose-down moment or a technique that
+ does not rely on static control authority.
+ 
+ Nguyen et al.~\cite{nguyen1979} investigated the first approach for the F-16
+ and found that reconfiguring the flaps produced a pitching-moment increment of
+ approximately $-0.018$ in the relevant angle-of-attack range, and speedbrake
+ deployment approximately $-0.025$. Neither was sufficient on its own to
+ eliminate the trim point with the centre of gravity at $0.35\bar{c}$, and both
+ would be expected to fail for more rearward loadings. The combination gave
+ approximately $-0.05$, which did eliminate it. The margins involved are
+ therefore small relative to the moments the model computes routinely, which is
+ one reason the omission of the stabilator effectiveness factor noted in
+ Section~9.1 is significant.
+ 
+ The second approach exploits the fact that although the static control
+ authority is insufficient, the control moment available is not zero. At the
+ deep-stall trim point of the F-16 the pitching-moment increment between full
+ nose-down and full nose-up stabilator is approximately $0.1$
+ \cite{nguyen1979}, which is enough to excite a pitch oscillation even though
+ neither extreme produces a stable low-incidence trim. Driving that oscillation
+ in resonance builds amplitude until the aircraft swings through an angle of
+ attack from which normal flight can be re-established. The technique is known
+ as pitch rocking, and Goman et al.~\cite{goman1993} give the control law in the
+ form
+ \begin{equation}
+ 	\delta_{h} = \delta_{h,0} + A\,\mathrm{sign}(q),
+ 	\label{eq:rocking}
+ \end{equation}
+ so that the stabilator reverses in phase with the pitch rate. They note that
+ the algorithm is independent of the aircraft's aerodynamic coefficients, which
+ is what makes it applicable across configurations, and that the ease of
+ recovery increases with the amplitude of the oscillation already present.
+ 
+ The simulator results of~\cite{nguyen1979} are consistent with this. With the
+ centre of gravity at $0.375\bar{c}$ and well-phased inputs, pitch rocking drove
+ the angle of attack to $84^{\circ}$ and recovery followed within eight seconds.
+ With poorly phased inputs the same recovery took five rocking cycles and some
+ thirty seconds. The technique was effective for every centre-of-gravity
+ location and asymmetry model examined, but its dependence on phasing is
+ evident.
+ 
+ \subsection{Relation to the Present Work}
+ 
+ The present analysis identifies the conditions under which the aircraft can
+ enter these regimes: the departure boundary near $\alpha = 34^{\circ}$, the
+ dutch roll stability boundary near $32^{\circ}$, and the centre-of-gravity
+ threshold beyond which a stable high-incidence equilibrium exists. It does not
+ determine which regime results, nor whether recovery is available.
+ 
+ Extending it would require two additions, in order. The first is a search for
+ equilibria with non-zero angular rates, which is a change of scope rather than
+ of method: the same continuation approach used in Section~5.4 applies, with
+ additional state variables. The second is the introduction of aerodynamic
+ asymmetry, either from the measured data of~\cite{nguyen1979} or through the
+ differential-equation formulation of~\cite{goman2003}, without which the
+ rotating equilibria that the literature identifies as the dangerous ones
+ cannot appear at all.
+ 
  
  \section{Limitations}
  \label{sec:limitations}
