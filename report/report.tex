@@ -112,7 +112,7 @@ hyphenation=true    % Hyphenation turn on/off
 
  Modern fighter configurations, including the F-16, delay and modify this behavior through the use of leading-edge extensions (strakes). Rather than simply generating lift through attached flow, the strake generates a strong, stable leading-edge vortex, which remains attached and continues to generate substantial additional lift well past the angle of attack at which the wing itself has stalled. Wind-tunnel flow-visualization tests on the F-16 configuration showed the outer wing panels stalling near $\alpha = 20^{\circ}$, while the wing-body strake continued producing lift up to a maximum $C_L$ near $\alpha = 35^{\circ}$ \cite[Sec.~``Longitudinal Characteristics,'' Fig.~9]{nguyen1979}.
 
- At still higher angles of attack, this vortex itself becomes unstable. It undergoes vortex breakdown --- an abrupt disorganization of the previously coherent vortex structure --- beyond which it can no longer sustain the same lift contribution \cite{sedlacek2023}. Because this breakdown process is highly sensitive to small geometric and flow asymmetries, the left and right vortices frequently break down at different angles of attack or in different manners, even when the aircraft is flying with zero sideslip and is otherwise geometrically symmetric \cite{sedlacek2023}. This produces unintended, asymmetric side forces and yawing/rolling moments --- a genuinely nonlinear phenomenon with no counterpart at low angle of attack, and one of the principal drivers of departure and spin susceptibility at high angle of attack \cite{nguyen1979}.
+ At still higher angles of attack, this vortex itself becomes unstable. It undergoes vortex breakdown --- an abrupt disorganization of the previously coherent vortex structure --- beyond which it can no longer sustain the same lift contribution \cite{sedlacek2023}. Because this breakdown process is highly sensitive to small geometric and flow asymmetries, the left and right vortices frequently break down at different angles of attack or in different manners, even when the aircraft is flying with zero sideslip and is otherwise geometrically symmetric \cite{sedlacek2023}. This produces unintended, asymmetric side forces and yawing/rolling moments --- a genuinely nonlinear phenomenon with no counterpart at low angle of attack, and one of the principal drivers of departure and spin susceptibility at high angle of attack \cite{nguyen1979}.The consequences of this asymmetry for post-departure motion are discussed in Section~\ref{sec:spin}.
  
  \section{Limitations of Static Aerodynamic Models and the Motivation for Unsteady Modeling}
  
@@ -504,7 +504,7 @@ hyphenation=true    % Hyphenation turn on/off
  flown with relaxed longitudinal static stability and depends on its flight
  control system for pitch stabilisation \cite{nguyen1979}.
  
-Second, a statically stable equilibrium exists at high angle of attack with the stabilator at its full nose-down limit. At this condition, the available nose-down control authority is fully applied, yet the aircraft retains a stable high-incidence equilibrium. The equilibrium analysis therefore indicates a deep-stall-like state from which the stabilator alone cannot eliminate the high-incidence equilibrium. The predicted equilibrium occurs above \(70^\circ\), and this value should not be interpreted as a quantitative prediction of the physical F-16 deep-stall angle, as discussed in Section 8.
+Second, a statically stable equilibrium exists at high angle of attack with the stabilator at its full nose-down limit. At this condition, the available nose-down control authority is fully applied, yet the aircraft retains a stable high-incidence equilibrium. The equilibrium analysis therefore indicates a deep-stall-like state from which the stabilator alone cannot eliminate the high-incidence equilibrium. The predicted equilibrium occurs above \(70^\circ\), and this value should not be interpreted as a quantitative prediction of the physical F-16 deep-stall angle, as discussed in Section~\ref{sec:limitations}.
 
  
  The same figure shows that this behaviour is absent at $0.30\bar{c}$, where
@@ -669,6 +669,7 @@ no interpolation artefact reproduces. Table~5.1 reports both.
  \label{sec:dynamic}
  
  \subsection{Method}
+ \label{sec:dynamic.1}
  
  Static stability determines whether the pitching moment opposes a change in
  angle of attack. It cannot determine whether a disturbance oscillates, how
@@ -685,7 +686,7 @@ no interpolation artefact reproduces. Table~5.1 reports both.
  curves and produces spurious apparent bifurcations.
  
  \subsection{Three Regimes of Stability}
- 
+ \label{sec:dynamic.2}
  % ---------------------------------------------------------------------
  % FIGURE: run run_modal_analysis.m, tab "Growth rate".
  % This is the single most important figure in the report.
@@ -719,7 +720,7 @@ no interpolation artefact reproduces. Table~5.1 reports both.
  separately below.
  
  \subsection{Dutch-Roll Instability and Hopf-Type Stability Boundary}
- 
+ \label{sec:dynamic.3}
  
  \begin{figure}[htbp]
  	\centering
@@ -735,7 +736,7 @@ no interpolation artefact reproduces. Table~5.1 reports both.
  The dutch roll damping decreases steadily from approximately $0.31$ at
  $\alpha = 20^{\circ}$ and crosses zero near $\alpha = 32^{\circ}$, at a
  frequency of approximately $1.1\,\mathrm{rad/s}$ corresponding to a period of
- about $5.6\,\mathrm{s}$.
+ about $5.6\,\mathrm{s}$.The subsequent fate of this mode is discussed in Section~\ref{sec:dynamic.5}.
  
  At approximately \(\alpha=32\text{--}33^\circ\), the Dutch-roll eigenvalue pair approaches and crosses the imaginary axis, indicating the onset of lateral-directional dynamic instability. This eigenvalue crossing is consistent with a Hopf-type stability boundary. However, because the present study does not calculate the first Lyapunov coefficient or perform a nonlinear time-domain simulation demonstrating a finite-amplitude periodic solution, a complete nonlinear Hopf bifurcation cannot be established from the present analysis alone.
  
@@ -749,7 +750,7 @@ no interpolation artefact reproduces. Table~5.1 reports both.
  
  
  \subsection{Directional Divergence}
- 
+ \label{sec:dynamic.4}
  \begin{figure}[htbp]
  	\centering
  	\includegraphics[width=0.85\textwidth]{real_roots.png}
@@ -779,7 +780,7 @@ no interpolation artefact reproduces. Table~5.1 reports both.
  its appearance in Figure~\ref{fig:damping} at the same angle.
  
  \subsection{Consistency with the Classical Departure Criterion}
- 
+ \label{sec:dynamic.5}
  
  \begin{figure}[htbp]
  	\centering
@@ -790,46 +791,68 @@ no interpolation artefact reproduces. Table~5.1 reports both.
  	\label{fig:departure}
  \end{figure}
  
- The classical departure criterion for directional divergence is the dynamic
- directional stability parameter
+ 
+ The classical criterion for directional divergence at high angle of attack is
+ the dynamic directional stability parameter, introduced by Moul and
+ Paulson~\cite{moul1958} to explain the observed stability of free-flight wind
+ tunnel models that were statically unstable in
+ yaw~\cite[Sec.~4.2.3]{seltzer1988}. It is defined in the stability axes as
+ 
  \begin{equation}
  	C_{n\beta,\mathrm{dyn}} = C_{n\beta}\cos\alpha
  	- \frac{I_{zz}}{I_{xx}}\,C_{l\beta}\sin\alpha,
  	\label{eq:cnbdyn}
  \end{equation}
- which predicts departure where it becomes negative. Evaluated from the static
- coefficients, Equation~\eqref{eq:cnbdyn} crosses zero at
- $\alpha = 34.0^{\circ}$, as shown in Figure~\ref{fig:departure}.
  
-  
-  The eigenvalue analysis of Section~6.4 places the directional divergence at
-  $\alpha = 33.9^{\circ}$, and the two results therefore differ by
-  $0.1^{\circ}$. This agreement should be interpreted carefully. The two
-  calculations are computationally distinct: the first evaluates a closed-form
-  expression in two static derivatives and an inertia ratio, while the second
-  extracts an eigenvalue from the numerically linearised eight-state model at a
-  trimmed equilibrium. They are not, however, independent. Both draw on the same
-  aerodynamic database and the same mass properties, and
-  $C_{n\beta,\mathrm{dyn}}$ is itself a reduced-order approximation to the
-  directional root whose sign change the eigenvalue analysis detects, obtained
-  by retaining only the static sideslip derivatives and neglecting the damping
-  terms and the coupling to the longitudinal states.
-  
-  What the comparison establishes is therefore internal consistency rather than
-  external validation. The agreement to $0.1^{\circ}$ confirms that the
-  lateral-directional part of the linearisation has been implemented correctly,
-  in the sense that the full model reproduces the behaviour of the standard
-  reduced-order criterion in the regime where that criterion is expected to
-  apply. It does not constitute independent confirmation that the physical
-  departure boundary of the aircraft lies at $34^{\circ}$; both results would be
-  displaced together by any error in the underlying aerodynamic data or in the
-  assumed inertias.
-  
-  It should be noted that $C_{n\beta,\mathrm{dyn}}$ is negative only over a
-  bounded interval, approximately $34^{\circ}$ to $39^{\circ}$, rather than
-  remaining negative at all higher angles. The criterion therefore identifies a
-  departure-susceptible band rather than an upper limit on angle of attack.
-  
+ and departure is predicted where it becomes negative. Evaluated from the
+ static coefficients, Equation~(6.1) crosses zero at $\alpha = 34.0^{\circ}$,
+ as shown in Figure~6.4.
+ 
+ The eigenvalue analysis of Section~6.4 places the directional divergence at
+ $\alpha = 33.9^{\circ}$, and the two results therefore differ by
+ $0.1^{\circ}$. The reason for the agreement is specific rather than
+ coincidental. As Seltzer and Rhodeside~\cite{seltzer1988} note,
+ $C_{n\beta,\mathrm{dyn}}$ is an approximation to the undamped natural
+ frequency of the dutch roll mode. The condition
+ $C_{n\beta,\mathrm{dyn}} = 0$ is therefore the condition under which that
+ natural frequency vanishes, at which point the dutch roll ceases to be
+ oscillatory and its complex pair separates into two real roots, one of which
+ is divergent. The criterion and the eigenvalue analysis are consequently two
+ evaluations of the same transition, one in closed form and one numerically.
+ 
+ This also connects the two instabilities identified separately above. The
+ dutch roll damping crosses zero near $\alpha = 32^{\circ}$, so the mode
+ becomes oscillatorily unstable while remaining oscillatory. Near
+ $\alpha = 34^{\circ}$ the criterion changes sign, the oscillation degenerates
+ into a pair of real roots, and the motion becomes a monotonic divergence in
+ sideslip and yaw rate. The behaviour described in Sections~6.3 and~6.4 is
+ therefore not two unrelated failures but two successive stages in the loss of
+ the same mode.
+ 
+ It follows that the agreement to $0.1^{\circ}$ establishes internal
+ consistency rather than external validation. Both calculations draw on the
+ same aerodynamic database and the same mass properties, and the second is an
+ approximation to the first. What the comparison confirms is that the
+ lateral-directional part of the linearisation has been implemented correctly,
+ in the sense that the full model reproduces the behaviour of the standard
+ reduced-order criterion in the regime where that criterion applies. It does
+ not constitute independent confirmation that the physical departure boundary
+ of the aircraft lies at $34^{\circ}$; both results would be displaced together
+ by any error in the underlying aerodynamic data or in the assumed inertias.
+ 
+ Two further qualifications should be recorded. First,
+ $C_{n\beta,\mathrm{dyn}}$ is negative only over a bounded interval,
+ approximately $34^{\circ}$ to $39^{\circ}$, rather than remaining negative at
+ all higher angles, so the criterion identifies a departure-susceptible band
+ rather than an upper limit on angle of attack. Second, the criterion is a
+ necessary rather than a sufficient indicator.
+ Seltzer and Rhodeside~\cite{seltzer1988} record that the condition
+ $C_{n\beta,\mathrm{dyn}} > 0$ has been found inadequate on its own in the
+ presence of aerodynamic asymmetries, destabilising external stores, and the
+ nonlinear inertial coupling moments that arise in manoeuvring flight, and that
+ this has motivated a range of alternative and more restrictive criteria. All
+ three of those effects are absent from the present model, the first of them
+ for the reasons discussed in Section~\ref{sec:spin}.
  
  \section{Unsteady Aerodynamic Modelling}
  \label{sec:unsteady}
@@ -1096,6 +1119,8 @@ no interpolation artefact reproduces. Table~5.1 reports both.
  stability, eigenvalues and bifurcation results are essentially insensitive to
  thrust, so the principal findings of this work do not rest on these values.
  
+ The tabulated coefficients are symmetric, so the aerodynamic asymmetries measured in the original wind tunnel programme and discussed in Section~\ref{sec:spin} are not represented. Their omission is the reason no rotating equilibrium can appear in the present formulation.
+ 
  \subsection{Resolution of the Tabulated Data}
  
  The angle-of-attack grid is spaced at $5^{\circ}$ intervals to $60^{\circ}$
@@ -1171,8 +1196,7 @@ no interpolation artefact reproduces. Table~5.1 reports both.
  \subsection{Scope of the Dynamic Analysis}
  
  The equilibria examined in Section~\ref{sec:dynamic} have zero sideslip, zero
- bank angle and zero angular rates. Spin is an equilibrium with non-zero roll
- and yaw rates and is therefore outside the set of solutions considered here.
+ bank angle and zero angular rates. Spin is an equilibrium with non-zero roll and yaw rates and is therefore outside the set of solutions considered here; see Section~\ref{sec:spin}.
  The departure boundary identified at $\alpha \approx 34^{\circ}$ indicates the
  condition at which the aircraft ceases to hold wings-level flight; it does not
  describe the motion that follows, nor whether that motion terminates in a
@@ -1312,10 +1336,7 @@ no interpolation artefact reproduces. Table~5.1 reports both.
  the interpolation discontinuity that confined the continuation of
  Section~5.4 to the scalar equilibrium problem, and would permit the same
  method to be extended to the full eight-state system using established
- continuation software. Extending
- the equilibrium search to include non-zero angular rates would allow steady
- spin states to be located, which the present formulation excludes by
- construction. Coupling the unsteady state-space model to the equations of
+ continuation software. Extending the equilibrium search to include non-zero angular rates would allow steady spin states to be located, though without the introduction of aerodynamic asymmetry the rotating equilibria that the literature identifies as the hazardous ones would not appear. Coupling the unsteady state-space model to the equations of
  motion, rather than exercising it in isolation, would establish whether the
  stability boundaries reported here are displaced once the finite response time
  of the separated flow is accounted for. The last of these is the most
