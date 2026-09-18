@@ -120,7 +120,13 @@ hyphenation=true    % Hyphenation turn on/off
  
  This behavior is referred to as unsteady aerodynamics, and it means that a purely static lookup-table model becomes increasingly inaccurate as angle of attack increases. Flight-data identification studies on high-angle-of-attack aircraft, such as the parameter identification analysis of the X-29A, address this by explicitly modeling the discrepancy between the static aerodynamic database and actual flight behavior as a state-dependent forcing term, effectively treating unsteady, separation-driven aerodynamic effects above approximately $15^{\circ}$ angle of attack as an additional input to the equations of motion rather than a fixed function of angle of attack alone \cite{iliff1996}.
  
- A related but distinct challenge is that the static coefficients themselves are highly nonlinear functions of angle of attack and sideslip, as shown directly in the wind tunnel data of \cite[Figs.~9 and~10]{nguyen1979}. Representing such behavior purely as an interpolated lookup table, as in the original wind-tunnel dataset, is functional for simulation but provides little insight into the underlying structure of the nonlinearity and can be cumbersome to update or extend. This has motivated the development of global nonlinear modeling techniques, which fit the tabulated aerodynamic data to compact analytical functions --- for example, multivariate orthogonal polynomial expansions constructed using Gram-Schmidt orthogonalization --- allowing the same nonlinear F-16 aerodynamic characteristics to be expressed in a closed, continuous mathematical form rather than a discrete table \cite{ismail2023}.
+ A related but distinct challenge is that the static coefficients themselves are highly nonlinear functions of angle of attack and sideslip, as shown directly in the wind tunnel data of \cite[Figs.~9 and~10]{nguyen1979}. Representing such behavior purely as an interpolated lookup table, as in the original wind-tunnel dataset, is functional for simulation but provides little insight into the underlying structure of the nonlinearity and can be cumbersome to update or extend. This has motivated the development of global nonlinear modeling techniques, which fit the tabulated aerodynamic data to compact analytical functions --- for example, multivariate orthogonal polynomial expansions constructed using Gram-Schmidt orthogonalization --- allowing the same nonlinear F-16 aerodynamic characteristics to be expressed in a closed, continuous mathematical form rather than a discrete table \cite{ismail2023}. 
+ Such fits serve a second purpose beyond compactness. Continuation and
+ bifurcation methods require the aerodynamic functions to be continuous and
+ differentiable, which a tabulated model with linear interpolation is not, and
+ smoothing the tables by spline or polynomial approximation is the standard
+ preparatory step for applying those methods~\cite{goman1998}. The analysis of
+ Section~5.4 depends on this, as discussed in Section~9.3.
  
 
  The most widely adopted formalisation of these unsteady effects is the
@@ -227,13 +233,22 @@ hyphenation=true    % Hyphenation turn on/off
  \cite{sonneveldt2006}. Three aspects of this assembly are structurally
  important and are easily misapplied.
  
- First, the leading-edge-flap tables are not increments. Each such table gives
- the total coefficient with the flap fully deployed, so the increment must be
- formed as the difference between the deployed-flap value and the clean value
- at zero stabilator deflection, and is then scaled linearly by
- $(1 - \delta_{\mathrm{lef}}/25)$. Treating these tables as increments
- directly produces a model that is incorrect at every flap setting including
- the retracted one.
+ 
+ First, the leading-edge-flap tables are not increments, and their labelling
+ is the reverse of what it suggests. The base tables correspond to the flap
+ deployed, which is the normal configuration of the original wind tunnel
+ programme, while the tables suffixed \emph{lef} correspond to the clean wing.
+ This was verified directly against the tabulated normal force: at
+ $\alpha = 30^{\circ}$ the base table gives $C_{Z} = -2.008$ against $-1.883$
+ for the \emph{lef} table, and the difference widens with incidence, which is
+ the signature of a deployed leading-edge device delaying separation. The
+ increment is therefore formed as the difference between the clean value and
+ the deployed value at zero stabilator deflection, and scaled by
+ $(1 - \delta_{\mathrm{lef}}/25)$, so that $\delta_{\mathrm{lef}} = 0$ recovers
+ the clean wing and $\delta_{\mathrm{lef}} = 25$ the deployed configuration.
+ Treating the tables in the opposite sense produces a model that is incorrect
+ at every flap setting including the nominal one.
+ 
  
  Second, the moment coefficients require centre-of-gravity transfer terms.
  Since the tables are referenced to $0.35\bar{c}$, any other centre of gravity
@@ -291,10 +306,13 @@ hyphenation=true    % Hyphenation turn on/off
  at $\alpha = 10^{\circ}$ changes $\partial C_{m}/\partial\alpha$ by a factor
  of two and causes the computed growth rate to jump from $0.33$ to
  $1.12\,\mathrm{s^{-1}}$, with no corresponding change in the physics.For the eigenvalue
- analysis of Section 6 and the fold verification of Section 5.4, the
- angle-of-attack axis is therefore first refined to $0.25^{\circ}$ using
+ analysis of Section 6 and the fold verification of Section 5.4, 
+ the angle-of-attack axis is therefore first refined to $0.25^{\circ}$ using
  monotone piecewise cubic interpolation, after which linear interpolation is
- applied on the refined grid. Coefficient values are essentially unchanged and
+ applied on the refined grid. Smoothing a tabulated aerodynamic model in this
+ way is the standard preparatory step for continuation and eigenvalue
+ analysis~\cite{goman1998}, and its implications are examined in
+ Section~9.3. Coefficient values are essentially unchanged and
  the slope becomes effectively continuous.
  
  \subsection{Equations of Motion}
@@ -504,7 +522,15 @@ hyphenation=true    % Hyphenation turn on/off
  flown with relaxed longitudinal static stability and depends on its flight
  control system for pitch stabilisation \cite{nguyen1979}.
  
-Second, a statically stable equilibrium exists at high angle of attack with the stabilator at its full nose-down limit. At this condition, the available nose-down control authority is fully applied, yet the aircraft retains a stable high-incidence equilibrium. The equilibrium analysis therefore indicates a deep-stall-like state from which the stabilator alone cannot eliminate the high-incidence equilibrium. The predicted equilibrium occurs above \(70^\circ\), and this value should not be interpreted as a quantitative prediction of the physical F-16 deep-stall angle, as discussed in Section~\ref{sec:limitations}.
+Second, a statically stable equilibrium exists at high angle of attack with the stabilator at its full nose-down limit. At this condition, the available nose-down control authority is fully applied, yet the aircraft retains a stable high-incidence equilibrium. The equilibrium analysis therefore indicates a deep-stall-like state from which the stabilator alone cannot eliminate the high-incidence equilibrium. 
+The predicted equilibrium occurs above $70^{\circ}$, whereas the original
+study reports the deep-stall trim point of this configuration at
+$\alpha \approx 60^{\circ}$ at the same centre-of-gravity
+position~\cite{nguyen1979}. The existence of the equilibrium is therefore
+consistent with the source, but the angle at which the present model places it
+is not, and this value should not be interpreted as a quantitative prediction
+of the physical deep-stall angle. The discrepancy is examined in
+Section~9.2.
 
  
  The same figure shows that this behaviour is absent at $0.30\bar{c}$, where
@@ -761,10 +787,9 @@ no interpolation artefact reproduces. Table~5.1 reports both.
  
  Beyond this stability boundary a second and more severe instability appears.
  Near $\alpha = 34^{\circ}$ a real eigenvalue crosses into the right half
- plane, with an eigenvector dominated by sideslip angle and yaw rate. This is
- not an oscillation but a directional divergence, in which sideslip grows
- monotonically, and it corresponds to the departure mode commonly termed nose
- slice. The modes carrying this root are labelled in Figure~6.3 by the names
+ plane, with an eigenvector dominated by sideslip angle and yaw rate. This divergence is the non-oscillatory continuation of the dutch roll mode
+ whose damping crossed zero at $32^{\circ}$; the connection is examined in
+ Section~\ref{sec:dynamic.5} The modes carrying this root are labelled in Figure~6.3 by the names
  they take at low incidence, roll subsidence and spiral, but those labels no
  longer describe them: at high angle of attack their eigenvectors are dominated
  by the directional states, and they are interpreted here accordingly. The
@@ -895,7 +920,20 @@ no interpolation artefact reproduces. Table~5.1 reports both.
  
  The calculation uses a relaxation time $\tau_{1} = 0.35\,\mathrm{s}$ and a
  convection lag $\tau_{2} = 0.05\,\mathrm{s}$, with the angle of attack
- prescribed as $\alpha(t) = 30^{\circ} + 8^{\circ}\sin\omega t$. The separation
+ prescribed as $\alpha(t) = 30^{\circ} + 8^{\circ}\sin\omega t$. 
+ These values are not arbitrary. Goman and Khrabrov report their fitted time
+ constants non-dimensionally, as multiples of the reference chord divided by
+ airspeed~\cite{goman1994}. For a slender delta wing in the angle-of-attack
+ range where vortex breakdown occurs they obtain a relaxation constant of
+ approximately $15\,\bar{c}/V$, and note that the same value is recovered from
+ both the pitch-oscillation and the damping data, which they attribute to the
+ single physical process of vortex breakdown development above the wing. With
+ $\bar{c} = 3.450\,\mathrm{m}$ and $V = 150\,\mathrm{m/s}$, that scaling gives
+ $\tau_{1} \approx 0.345\,\mathrm{s}$. For a NACA 0015 aerofoil in ramp motion
+ the same reference obtains $0.52\,\bar{c}/V$ and $4.5\,\bar{c}/V$ for the two
+ constants, or $0.012\,\mathrm{s}$ and $0.104\,\mathrm{s}$ at the same
+ condition.
+ The separation
  characteristic is taken as unity below $18^{\circ}$, and the attached-flow
  slope used in the Kirchhoff inversion is $C_{N\alpha} = 4.03$ per radian,
  fitted between $4^{\circ}$ and $12^{\circ}$. Equation~(3.1) is integrated for
@@ -924,23 +962,29 @@ no interpolation artefact reproduces. Table~5.1 reports both.
  	\label{fig:gksweep}
  \end{figure}
  
- The time constants $\tau_{1}$ and $\tau_{2}$ are determined from
- forced-oscillation testing and are not available in the static dataset. Rather
- than adopting values from another aircraft, both are treated as parameters and
- varied. Figure~\ref{fig:gksweep} shows the resulting loop width as a function
- of oscillation frequency.
+
+The time constants are determined from forced-oscillation testing and are not
+contained in the static dataset, so no value identified for this aircraft is
+available. The scaling reported by Goman and
+Khrabrov~\cite{goman1994} provides an estimate, as set out in Section~7.2,
+but it is derived from a delta wing rather than from the F-16 and the
+correspondence is one of flow mechanism rather than of geometry. Both
+constants are therefore varied, and Figure~7.3 shows the resulting loop width
+as a function of oscillation frequency.
  
  The loop width exhibits a maximum at an intermediate frequency for every value
  of $\tau_{1}$ examined. The interpretation is physical: at low frequency the
  separation point follows its steady value closely and there is negligible lag;
  at high frequency it cannot respond at all and remains effectively frozen;
  maximum hysteresis occurs at intermediate frequencies where the flow is
- responding but failing to keep pace. Since this behaviour is present for every value of $\tau_{1}$ examined, the
- qualitative conclusion does not depend on the particular values chosen,
- although the magnitude of the effect does. No independent determination of
- $\tau_{1}$ or $\tau_{2}$ for this aircraft is available, so the range shown is
- illustrative rather than established.
- 
+ responding but failing to keep pace. 
+ The behaviour is present for every value of $\tau_{1}$ examined, so the
+ qualitative conclusion does not depend on the particular value chosen,
+ although the magnitude of the effect does. The range investigated,
+ $0.10\,\mathrm{s}$ to $1.00\,\mathrm{s}$, brackets the estimate of
+ $0.345\,\mathrm{s}$ obtained from the vortex-breakdown scaling by a factor of
+ approximately three in each direction, which is a reasonable margin given that
+ the scaling is transferred from a different configuration.
  
  \section{Spin and Post-Departure Behaviour}
  \label{sec:spin}
@@ -1105,13 +1149,60 @@ no interpolation artefact reproduces. Table~5.1 reports both.
  The speedbrake contribution is likewise absent, but is not required for any of
  the analyses presented.
  
- The leading-edge flap is held retracted rather than following its scheduled
- deflection. This is a deliberate choice rather than an omission: holding the
- flap fixed isolates the behaviour of the airframe from that of its control
- system, which is appropriate for a study of bare-airframe stability. It does
- mean, however, that the results describe the aircraft with its high-lift
- devices inoperative, which is not the configuration in which it is normally
- flown.
+ 
+ The leading-edge flap is held retracted throughout the analysis, rather than
+ at the deflection used in the original wind tunnel programme, which specifies
+ $\delta_{\mathrm{lef}} = 25^{\circ}$ as the normal
+ configuration~\cite{nguyen1979}. This is a deliberate choice rather than an
+ omission: holding the flap fixed and undeflected isolates the behaviour of the
+ airframe from that of its control system, which is appropriate for a study of
+ bare-airframe stability. It does mean that the results describe the aircraft
+ with its high-lift devices inoperative, which is not the configuration in
+ which it is normally flown.
+ 
+ The consequence of that choice has been quantified by repeating the
+ centre-of-gravity continuation of Section~5.4 with the flap deployed. The
+ effect is substantial and acts in two distinct ways. The critical
+ centre-of-gravity position at which the high-incidence equilibrium pair
+ appears moves aft from $0.3071\bar{c}$ to $0.3386\bar{c}$, so the deployed
+ flap delays the onset of the deep-stall-like state by approximately three per
+ cent of the chord. The angle of attack of the stable branch at the reference
+ centre of gravity falls from $76.0^{\circ}$ to $58.2^{\circ}$. The retracted
+ configuration is therefore both more susceptible to the state and places it at
+ a substantially higher incidence.
+ 
+ 
+ The two configurations are compared with the published values in
+ Table~\ref{tab:lef}. The retracted configuration is both more susceptible to
+ the high-incidence state and places it at a substantially higher angle of
+ attack; the deployed configuration, which matches that of the original wind
+ tunnel programme, falls within the published range.
+ 
+ 
+ % --- the table ---
+ 
+ \begin{table}[htbp]
+ 	\centering
+ 	\caption{Effect of leading-edge flap deflection on the high-incidence
+ 		equilibrium at full nose-down stabilator, compared with the published
+ 		values for the deployed configuration.}
+ 	\label{tab:lef}
+ 	\begin{tabular}{lccc}
+ 		\hline
+ 		& \multicolumn{2}{c}{Present model} & Published \\
+ 		\cline{2-3}
+ 		& $\delta_{\mathrm{lef}} = 0^{\circ}$
+ 		& $\delta_{\mathrm{lef}} = 25^{\circ}$
+ 		& \cite{nguyen1979} \\
+ 		\hline
+ 		$\alpha$ at $x_{cg} = 0.35\bar{c}$ (deg)
+ 		& 76.0 & 58.2 & 55 to 60 \\
+ 		Critical $x_{cg}$ ($\bar{c}$)
+ 		& 0.3071 & 0.3386 & -- \\
+ 		\hline
+ 	\end{tabular}
+ \end{table}
+ 
  
  The engine thrust tables were transcribed from the reference rather than
  verified against a primary document. Trim throttle setting depends on them
@@ -1130,15 +1221,29 @@ no interpolation artefact reproduces. Table~5.1 reports both.
  appearing between those points is a property of the interpolation rather than
  of the measurements.
  
- This bears directly on the deep-stall result. The present model places the
- stable high-incidence equilibrium above $70^{\circ}$ angle of attack, 
- whereas the deep stall of the F-16 is generally reported at a substantially
- lower angle of attack. Three factors plausibly contribute: the sparse grid in precisely
- this region, the omission of $\eta(\delta_{h})$ noted above, and the retracted
- leading-edge flap. The qualitative result, that a statically stable
- equilibrium exists at high incidence under full nose-down control at the
- reference centre of gravity, is robust to all three. The particular angle at
- which it occurs is not, and should not be quoted as a prediction.
+ 
+ 
+ This bears directly on the deep-stall result, though less so than the
+ configuration difference discussed in Section~9.1. The original study reports
+ the deep-stall trim point at $\alpha \approx 60^{\circ}$, and quotes the
+ angle-of-attack range of interest for recovery as $55^{\circ}$ to
+ $60^{\circ}$, in both cases with the centre of gravity at $0.35\bar{c}$ and
+ the leading-edge flap at its normal deflection~\cite{nguyen1979}. The primary
+ analysis of this work, with the flap retracted, places the equilibrium at
+ $76.0^{\circ}$. Repeating the calculation with the flap deployed, which
+ matches the configuration of the source, gives $58.2^{\circ}$, which falls
+ inside the published range.
+ 
+ The discrepancy is therefore attributable principally to the flap setting
+ rather than to the resolution of the tabulated data. Two further factors
+ remain relevant but secondary. The omission of $\eta(\delta_{h})$ noted in
+ Section~9.1 overstates the nose-down moment available at the full deflection
+ used throughout this analysis, and would act in the direction of displacing
+ the equilibrium to higher incidence. The sparse grid is a concern for the
+ retracted result, which lies above $70^{\circ}$ where the table has nodes only
+ at $70^{\circ}$, $80^{\circ}$ and $90^{\circ}$, but not for the deployed
+ result at $58.2^{\circ}$, which lies within the region sampled at $5^{\circ}$
+ intervals.
  
  A comparable caution applies to features of the eigenvalue results that appear
  between widely spaced nodes. The local maximum in growth rate near
@@ -1167,23 +1272,36 @@ no interpolation artefact reproduces. Table~5.1 reports both.
  which coincides with a table point, and all of which are consequently located
  using interpolated slopes.
  
- The second concerns the range over which continuation methods could be
- applied. Pseudo-arclength continuation was used successfully in Section~5.4
- for the scalar equilibrium condition $C_{m}(\alpha, x_{cg}) = 0$, which has
- one equation, one state and one parameter. It traced the branch through the
- fold in a single connected run and located the turning point directly.
+ This smoothing is not a workaround adopted in response to a difficulty
+ particular to the present implementation. It is the standard preparatory step
+ for continuation analysis of a tabulated aerodynamic model. Goman and
+ Khramtsovsky~\cite{goman1998} state the requirement directly: wind tunnel data
+ are measured and tabulated over a range of state and control parameters, and
+ to implement the continuation technique the aerodynamic functions may be
+ smoothed by spline or polynomial approximation in order to satisfy the
+ continuity and differentiability conditions that the resulting nonlinear
+ dynamic system requires. The refinement described in Section~4.3 serves
+ exactly this purpose. What must be recorded is not that the step was taken but
+ that it introduces information the measurements do not contain, which is the
+ point made in the preceding paragraph.
+ 
+ The second consequence concerns the range over which continuation could be
+ applied. Pseudo-arclength continuation was used in Section~5.4 for the scalar
+ equilibrium condition $C_{m}(\alpha, x_{cg}) = 0$, which has one equation, one
+ state and one parameter. It traced the branch through the fold in a single
+ connected run and located the turning point directly.
  
  The same approach was not successful when applied to the full eight-state
  system of Section~6. The Newton corrector on which continuation depends
- requires a continuous Jacobian, and the sensitivity of an eight-dimensional
- Jacobian to the interpolation discontinuity is considerably greater than that
- of a scalar derivative: exploratory calculations stalled at table nodes after
- covering a limited range of the parameter. Kolb~\cite{kolb2017} does not
- encounter this difficulty because the F-18 model used in that work is given in
- analytic form. The established approach for tabulated data is to fit the
- tables to smooth global functions before applying continuation, which is one
- of the motivations for the global nonlinear modelling techniques discussed in
- Section~3~\cite{ismail2023}. That fitting was not carried out here.
+ requires a continuous Jacobian, and an eight-dimensional Jacobian is
+ considerably more sensitive to residual non-smoothness than a scalar
+ derivative: exploratory calculations stalled at table nodes after covering a
+ limited range of the parameter. The local refinement adopted here restores
+ continuity of the first derivative but does not deliver the globally smooth
+ representation that~\cite{goman1998} describes, and which a spline or
+ polynomial fit over the full tabulated range would provide. Fitting the tables
+ in that manner was not carried out in the present work, and its absence is the
+ reason the continuation is confined to the scalar problem.
  
  The results of Section~6 are consequently obtained by a parameter sweep in
  which the equilibrium condition is solved independently at each step, with
@@ -1219,12 +1337,19 @@ no interpolation artefact reproduces. Table~5.1 reports both.
  
  \subsection{The Unsteady Model}
  
- The time constants $\tau_{1}$ and $\tau_{2}$ of the state-space formulation
- are properties of the flow and are obtained from forced-oscillation wind
- tunnel testing, which the static dataset does not include. The sensitivity
- study of Section~\ref{sec:unsteady} establishes that hysteresis is present across the illustrative range of these parameters examined and that its dependence on
- frequency has a consistent form, but the magnitude of the effect for the F-16
- specifically cannot be determined from the available data.
+ 
+ The time constants of the state-space formulation are properties of the flow
+ and are obtained from forced-oscillation wind tunnel testing, which the static
+ dataset does not include. The non-dimensional scaling reported
+ in~\cite{goman1994} allows an estimate to be transferred from a slender delta
+ wing exhibiting vortex breakdown, and the value used here agrees with it to
+ within a few per cent, but this is an argument from similarity of flow
+ mechanism rather than an identification for this aircraft. The sensitivity
+ study of Section~7.3 establishes that hysteresis is present across the range
+ of these parameters examined and that its dependence on frequency has a
+ consistent form. The magnitude of the effect for the F-16 specifically cannot
+ be determined without dynamic test data.
+ 
  
  The implementation also adopts a simplified reconstruction, in which the
  coefficient is recovered by evaluating the static tables at the angle of
@@ -1262,10 +1387,22 @@ no interpolation artefact reproduces. Table~5.1 reports both.
  equilibrium states is not fixed: depending on stabilator deflection and centre
  of gravity there may be none, one, or several.
  
- This variability has a direct consequence for controllability. At the
- reference centre of gravity the aircraft possesses a statically stable
+ This variability has a direct consequence for controllability.
+ At the reference centre of gravity the aircraft possesses a statically stable
  equilibrium at high angle of attack with the stabilator at its full nose-down
  limit, a deep-stall-like state which the stabilator alone cannot eliminate.
+ 
+ The existence of such a state agrees with the original study, which reports a
+ deep-stall trim point at $\alpha \approx 60^{\circ}$ for this
+ configuration~\cite{nguyen1979}. The analysis presented here, conducted with
+ the leading-edge flap retracted in order to isolate the bare airframe, places
+ it at $76.0^{\circ}$. Repeating the calculation with the flap at the
+ deflection used in the original programme returns $58.2^{\circ}$, inside the
+ published range, and moves the critical centre-of-gravity position aft from
+ $0.3071\bar{c}$ to $0.3386\bar{c}$. The model therefore reproduces the
+ published result when the configuration is matched, and the sensitivity of
+ the deep-stall equilibrium to leading-edge flap deflection is itself
+ substantial.
  Varying the centre of gravity shows that this state is created at
  $x_{cg} = 0.3071\bar{c}$ through a saddle-node bifurcation, verified by the
  tangency of the merging branches and by the square root scaling of their
@@ -1291,9 +1428,11 @@ no interpolation artefact reproduces. Table~5.1 reports both.
  $C_{n\beta,\mathrm{dyn}}$, a closed-form expression in two static derivatives
  and an inertia ratio, changes sign at $\alpha = 34.0^{\circ}$; the eigenvalue
  analysis of the linearised eight-state model places the divergence at
- $\alpha = 33.9^{\circ}$. Since the criterion is a reduced-order approximation
- to the same eigenvalue, this agreement confirms the internal consistency of the
- implementation rather than validating the result against independent evidence.
+ $\alpha = 33.9^{\circ}$.Since the criterion is an approximation to the undamped natural frequency of
+ the dutch roll mode, its sign change marks the point at which that mode ceases
+ to oscillate and separates into real roots, one of which diverges. The
+ agreement therefore confirms the internal consistency of the implementation
+ rather than validating the result against independent evidence.
  
  Finally, a simplified implementation based on the Goman--Khrabrov
  separation-state formulation demonstrates that the static representation
@@ -1331,12 +1470,8 @@ no interpolation artefact reproduces. Table~5.1 reports both.
  \subsection{Recommendations for Further Work}
  
  Three extensions follow naturally from the limitations identified in
- Section~\ref{sec:limitations}. 
- Fitting the tabulated aerodynamic data to smooth global functions would remove
- the interpolation discontinuity that confined the continuation of
- Section~5.4 to the scalar equilibrium problem, and would permit the same
- method to be extended to the full eight-state system using established
- continuation software. Extending the equilibrium search to include non-zero angular rates would allow steady spin states to be located, though without the introduction of aerodynamic asymmetry the rotating equilibria that the literature identifies as the hazardous ones would not appear. Coupling the unsteady state-space model to the equations of
+ Section~\ref{sec:limitations}. Fitting the tabulated aerodynamic data to smooth global functions over their full range, as recommended for continuation analysis by Goman and Khramtsovsky~\cite{goman1998}, would permit the method applied to the scalar problem in Section~5.4 to be extended to the
+ full eight-state system. Extending the equilibrium search to include non-zero angular rates would allow steady spin states to be located, though without the introduction of aerodynamic asymmetry the rotating equilibria that the literature identifies as the hazardous ones would not appear. Coupling the unsteady state-space model to the equations of
  motion, rather than exercising it in isolation, would establish whether the
  stability boundaries reported here are displaced once the finite response time
  of the separated flow is accounted for. The last of these is the most

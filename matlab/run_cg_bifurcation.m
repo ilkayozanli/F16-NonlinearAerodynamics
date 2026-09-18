@@ -27,7 +27,7 @@ clear; close all; clc;
 
 dh   = 25;                          % [deg] full nose-down stabilator
 V    = 150;                         % [m/s]
-dlef = 0;                           % leading edge flap retracted
+dlef = 25;                           % leading edge flap retracted
 
 xcg_sweep  = 0.28:0.002:0.40;       % c.g. as a fraction of cbar
 alpha_grid = linspace(-20, 90, 441);
